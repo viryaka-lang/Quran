@@ -52,9 +52,9 @@ button{cursor:pointer}
   padding:max(4px,env(safe-area-inset-top,0px)) max(4px,env(safe-area-inset-right,0px)) max(4px,env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px));touch-action:pan-y pinch-zoom}
 .spread{height:100%;max-width:100%;display:flex;flex-direction:row;justify-content:center;align-items:center;transition:transform .2s ease,opacity .2s ease}
 .spread.out-l{transform:translateX(-20px);opacity:0}.spread.out-r{transform:translateX(20px);opacity:0}
-.pg{width:min(100cqw,100cqh*600/975);aspect-ratio:600/975;background:#fffcdb;box-shadow:var(--shadow);overflow:hidden;border-radius:3px;
+.pg{width:min(100cqw,100cqh*800/1242);aspect-ratio:800/1242;background:#fffcdb;box-shadow:var(--shadow);overflow:hidden;border-radius:3px;
   display:flex;flex-direction:column;container-type:size;position:relative}
-.spread.two .pg{width:min(50cqw,100cqh*600/975)}
+.spread.two .pg{width:min(50cqw,100cqh*800/1242)}
 .spread.two .pg:first-child{border-radius:0 3px 3px 0}
 .spread.two .pg:last-child{border-radius:3px 0 0 3px}
 /* fill mode: the page is stretched to the whole screen instead of keeping its proportions */
@@ -63,19 +63,20 @@ button{cursor:pointer}
 :root[data-fit="fill"] .pg{aspect-ratio:auto;width:100cqw;height:100cqh;border-radius:0;box-shadow:none}
 :root[data-fit="fill"] .spread.two .pg{width:50cqw;border-radius:0}
 :root[data-fit="fill"] .pg img{object-fit:fill}
-.pg img{display:block;width:100%;flex:1 1 0;min-height:0;object-fit:contain;-webkit-user-drag:none;pointer-events:none;
+.pg img{display:block;width:100%;height:100%;object-fit:contain;-webkit-user-drag:none;pointer-events:none;
   filter:brightness(var(--dim,1));transition:filter .25s ease}
 /* reading tones: warm softens the white, night inverts the page and keeps the tajweed colours readable */
 :root[data-tone="warm"] .pg{background:#f3e7c9}
-/* page number strip under each page, as in a printed mushaf */
-.pno{flex:none;height:4.4cqh;display:grid;place-items:center;color:#1f5c48;font:600 2.3cqh/1 var(--f-ar);font-variant-numeric:lining-nums tabular-nums}
+/* page number drawn over the image: a label box like the printed «حزب» one, centred in the empty top margin
+   (positions measured on the 800x1242 pages); the two decorated opening pages use their bottom margin */
+.pno{position:absolute;left:44.4%;width:11.2%;top:.4%;height:3%;display:grid;place-items:center;
+  background:#fff;border:max(1px,.16cqh) solid #4a9e7e;color:#000;font:500 1.9cqh/1 Arial,"Helvetica Neue",Roboto,sans-serif;font-variant-numeric:lining-nums tabular-nums;
+  filter:brightness(var(--dim,1));transition:filter .25s ease}
+.pno.low{top:94.2%}
 .pg .miss{position:absolute;left:10%;right:10%;top:45%;text-align:center;color:#5d6b63;font-size:14px;line-height:1.6}
-.pno span{min-width:5.2cqh;padding:.12em .6em;border:1px solid #c9a24d;border-radius:1em;text-align:center;filter:brightness(var(--dim,1))}
-:root[data-tone="night"] .pno{color:#d7a947}
-:root[data-tone="night"] .pno span{border-color:#6f5a2a}
-:root[data-tone="warm"] .pg img{filter:sepia(.4) saturate(.9) brightness(calc(var(--dim,1) * .96))}
+:root[data-tone="warm"] .pg img,:root[data-tone="warm"] .pno{filter:sepia(.4) saturate(.9) brightness(calc(var(--dim,1) * .96))}
 :root[data-tone="night"] .pg{background:#1e1c09}
-:root[data-tone="night"] .pg img{filter:invert(.92) hue-rotate(180deg) saturate(.85) brightness(calc(var(--dim,1) * .88)) contrast(.95)}
+:root[data-tone="night"] .pg img,:root[data-tone="night"] .pno{filter:invert(.92) hue-rotate(180deg) saturate(.85) brightness(calc(var(--dim,1) * .88)) contrast(.95)}
 :root[data-tone="night"] .stage{background:#050706}
 
 /* floating bars */
@@ -270,9 +271,8 @@ function pagesFor(p){ if(!twoUp()) return [p]; var a = p%2 ? p : p-1; return a+1
 function makePage(p){
   var d=document.createElement('div'); d.className='pg'; d.dataset.p=p;
   var img=document.createElement('img'); img.alt='الصفحة '+p; img.decoding='async'; img.src=PAGES[p-1];
-  var n=document.createElement('div'); n.className='pno'; n.setAttribute('aria-hidden','true');
-  var ns=document.createElement('span'); ns.textContent=p; n.appendChild(ns);
-  img.onerror=function(){ img.style.visibility='hidden'; if(d.querySelector('.miss')) return; var m=document.createElement('div'); m.className='miss';
+  var n=document.createElement('div'); n.className=p<=2?'pno low':'pno'; n.setAttribute('aria-hidden','true'); n.textContent=p;
+  img.onerror=function(){ img.style.visibility='hidden'; n.hidden=true; if(d.querySelector('.miss')) return; var m=document.createElement('div'); m.className='miss';
     m.textContent='هذه الصفحة غير محفوظة على الجهاز. اتصل بالإنترنت، أو فعّل «القراءة دون اتصال» من الفهرس.'; d.appendChild(m); };
   d.append(img,n); return d;
 }
