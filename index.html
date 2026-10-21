@@ -110,7 +110,8 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--green);direction:rtl;hei
 @media (max-width:520px){.navbtn span{display:none}.navbtn{padding:0 8px}.where{gap:0 10px}.where .sname{font-size:19px}}
 
 /* tap zones hint */
-.hint{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:15;background:var(--ink);color:var(--surface);
+/* touches pass through the hint to the page, so a swipe in the first seconds still turns it */
+.hint{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:15;pointer-events:none;background:var(--ink);color:var(--surface);
   padding:12px 18px;border-radius:14px;font-size:14px;text-align:center;line-height:1.5;box-shadow:var(--shadow);max-width:min(320px,calc(100% - 32px));transition:opacity .3s}
 .hint b{display:block;font-size:15px}
 .hint.fade{opacity:0;pointer-events:none}
@@ -242,7 +243,10 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
     <div class="seg" id="animSeg" role="group" aria-label="حركة تقليب الصفحة">
       <button data-anim="slide">انزلاق</button><button data-anim="fade">تلاشٍ</button><button data-anim="none">بدون</button>
     </div>
-    <div class="row2"><span>اهتزاز عند التقليب<small id="buzzNote">اهتزاز خفيف مع كل صفحة</small></span><button class="pill" id="buzzBtn" aria-pressed="false">متوقف</button></div>
+    <div class="row2"><span>اهتزاز عند التقليب<small id="buzzNote">اهتزاز قصير مع كل صفحة</small></span><button class="pill" id="buzzBtn" aria-pressed="false">متوقف</button></div>
+    <div class="seg" id="buzzSeg" role="group" aria-label="قوة الاهتزاز" hidden>
+      <button data-ms="20">خفيف</button><button data-ms="40">متوسط</button><button data-ms="70">قوي</button>
+    </div>
     <div class="row2"><span>إبقاء الشاشة مضاءة<small>أثناء القراءة</small></span><button class="pill" id="wakeBtn" aria-pressed="true">مفعّل</button></div>
     <div class="row2"><span>اتجاه الشاشة<small id="oriNote">تدوير حر</small></span><button class="pill" id="oriBtn">تلقائي</button></div>
     <div class="sec">التطبيق</div>
@@ -382,7 +386,8 @@ var wasFs=false;
 if(!fsSupported) $('fsBtn').hidden=true;
 // browsers only allow full screen after a tap or key press, so the first one turns it on
 function firstTouch(){ if(fsWanted && fsSupported && !inFs()) enterFs(); dismissHint(); }
-['pointerdown','pointerup','touchend','click'].forEach(function(ev){ document.addEventListener(ev, firstTouch, true); });
+// on lift, not touch-down: switching to full screen mid-touch cancels that touch, which ate the first swipe
+['pointerup','touchend','click'].forEach(function(ev){ document.addEventListener(ev, firstTouch, true); });
 document.addEventListener('keydown', function(e){ if(e.key!=='Escape' && e.key!=='F11') firstTouch(); }, true);
 
 var hint=$('hint');
@@ -437,12 +442,22 @@ var animMode = store.get('anim', matchMedia('(prefers-reduced-motion: reduce)').
 function setAnim(m){ animMode = ['slide','fade','none'].indexOf(m)>=0 ? m : 'slide'; store.set('anim',animMode);
   Array.prototype.forEach.call($('animSeg').children, function(b){ b.setAttribute('aria-pressed', String(b.dataset.anim===animMode)); }); }
 Array.prototype.forEach.call($('animSeg').children, function(b){ b.onclick=function(){ setAnim(b.dataset.anim); }; });
-var buzzOn = store.get('buzz', false), canBuzz = typeof navigator.vibrate==='function';
+// 12 ms (the first version) is shorter than many phone motors can start, so nothing was felt
+var buzzOn = store.get('buzz', false), buzzMs = store.get('buzzMs', 40), canBuzz = typeof navigator.vibrate==='function';
 function buzzUi(){ var b=$('buzzBtn'); b.textContent = !canBuzz ? 'غير مدعوم' : buzzOn ? 'مفعّل' : 'متوقف';
   b.setAttribute('aria-pressed', String(buzzOn && canBuzz)); b.disabled=!canBuzz;
-  if(!canBuzz) $('buzzNote').textContent='هذا الجهاز أو المتصفح لا يدعم الاهتزاز'; }
-function buzz(){ if(buzzOn && canBuzz){ try{ navigator.vibrate(12); }catch(_){} } }
-$('buzzBtn').onclick=function(){ buzzOn=!buzzOn; store.set('buzz',buzzOn); buzzUi(); if(buzzOn) buzz(); };
+  $('buzzSeg').hidden = !(buzzOn && canBuzz);
+  Array.prototype.forEach.call($('buzzSeg').children, function(x){ x.setAttribute('aria-pressed', String(+x.dataset.ms===buzzMs)); });
+  if(!canBuzz) $('buzzNote').textContent='هذا الجهاز أو المتصفح لا يدعم الاهتزاز (مثل iPhone)'; }
+function buzz(){
+  if(!buzzOn || !canBuzz) return;
+  var okv=false; try{ okv=navigator.vibrate(buzzMs); }catch(_){}
+  // false means the browser refused (no tap on the page yet, or blocked); say so instead of failing silently
+  $('buzzNote').textContent = okv ? 'اهتزاز قصير مع كل صفحة. إن لم تشعر به فتحقق من إعدادات الاهتزاز في الهاتف'
+                                  : 'رفض المتصفح الاهتزاز. اضغط على الصفحة مرة ثم حاول مجدداً';
+}
+$('buzzBtn').onclick=function(){ buzzOn=!buzzOn; store.set('buzz',buzzOn); buzzUi(); buzz(); };
+Array.prototype.forEach.call($('buzzSeg').children, function(x){ x.onclick=function(){ buzzMs=+x.dataset.ms; store.set('buzzMs',buzzMs); buzzUi(); buzz(); }; });
 setAnim(animMode); buzzUi();
 
 /* ---------- version (version.js, raised on every commit) ---------- */
