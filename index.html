@@ -50,18 +50,24 @@ button{cursor:pointer}
 /* the page */
 .stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
   padding:max(4px,env(safe-area-inset-top,0px)) max(4px,env(safe-area-inset-right,0px)) max(4px,env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px));touch-action:pan-y pinch-zoom}
-.spread{height:100%;max-width:100%;display:flex;flex-direction:row-reverse;justify-content:center;align-items:center;transition:transform .2s ease,opacity .2s ease}
+.spread{height:100%;max-width:100%;display:flex;flex-direction:row;justify-content:center;align-items:center;transition:transform .2s ease,opacity .2s ease}
 .spread.out-l{transform:translateX(-20px);opacity:0}.spread.out-r{transform:translateX(20px);opacity:0}
-.pg{height:100%;aspect-ratio:600/932;max-width:100%;background:#fffef6;box-shadow:var(--shadow);overflow:hidden;border-radius:3px}
+.pg{height:100%;aspect-ratio:600/975;max-width:100%;background:#fffcdb;box-shadow:var(--shadow);overflow:hidden;border-radius:3px;
+  display:flex;flex-direction:column;container-type:size}
 .spread.two .pg{max-width:50%}
 .spread.two .pg:first-child{border-radius:0 3px 3px 0}
 .spread.two .pg:last-child{border-radius:3px 0 0 3px}
-.pg img{display:block;width:100%;height:100%;object-fit:contain;-webkit-user-drag:none;pointer-events:none;
+.pg img{display:block;width:100%;flex:1 1 0;min-height:0;object-fit:contain;-webkit-user-drag:none;pointer-events:none;
   filter:brightness(var(--dim,1));transition:filter .25s ease}
 /* reading tones: warm softens the white, night inverts the page and keeps the tajweed colours readable */
 :root[data-tone="warm"] .pg{background:#f3e7c9}
+/* page number strip under each page, as in a printed mushaf */
+.pno{flex:none;height:4.4cqh;display:grid;place-items:center;color:#1f5c48;font:600 2.3cqh/1 var(--f-ar);font-variant-numeric:lining-nums tabular-nums}
+.pno span{min-width:5.2cqh;padding:.12em .6em;border:1px solid #c9a24d;border-radius:1em;text-align:center;filter:brightness(var(--dim,1))}
+:root[data-tone="night"] .pno{color:#d7a947}
+:root[data-tone="night"] .pno span{border-color:#6f5a2a}
 :root[data-tone="warm"] .pg img{filter:sepia(.4) saturate(.9) brightness(calc(var(--dim,1) * .96))}
-:root[data-tone="night"] .pg{background:#141815}
+:root[data-tone="night"] .pg{background:#1e1c09}
 :root[data-tone="night"] .pg img{filter:invert(.92) hue-rotate(180deg) saturate(.85) brightness(calc(var(--dim,1) * .88)) contrast(.95)}
 :root[data-tone="night"] .stage{background:#050706}
 
@@ -252,7 +258,9 @@ function pagesFor(p){ if(!twoUp()) return [p]; var a = p%2 ? p : p-1; return a+1
 function makePage(p){
   var d=document.createElement('div'); d.className='pg'; d.dataset.p=p;
   var img=document.createElement('img'); img.alt='الصفحة '+p; img.decoding='async'; img.src=PAGES[p-1];
-  d.appendChild(img); return d;
+  var n=document.createElement('div'); n.className='pno'; n.setAttribute('aria-hidden','true');
+  var ns=document.createElement('span'); ns.textContent=p; n.appendChild(ns);
+  d.append(img,n); return d;
 }
 function warm(p){ if(p>=1&&p<=N){ var i=new Image(); i.decoding='async'; i.src=PAGES[p-1]; if(i.decode) i.decode().catch(function(){}); } }
 function go(p, instant){
