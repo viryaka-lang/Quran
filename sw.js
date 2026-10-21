@@ -1,5 +1,5 @@
 // Shell is versioned (bump SHELL to ship an update); page images live in their own cache and survive shell updates.
-const SHELL = 'warsh-shell-v5';
+const SHELL = 'warsh-shell-v6';
 const PAGE_CACHE = 'warsh-pages-v1';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-192.png', './icons/icon-maskable-512.png', './icons/icon-monochrome-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png'];
 
@@ -18,28 +18,34 @@ async function broadcast(msg) {
   for (const c of await self.clients.matchAll({ includeUncontrolled: true })) c.postMessage(msg);
 }
 
-let precaching = false;
+// Offline reading is opt-in: the page cache exists only while the reader has it switched on.
+// Each switch bumps `gen`, so a download still running from an earlier "on" stops by itself.
+let gen = 0;
 async function precache(urls) {
-  if (precaching) return;
-  precaching = true;
-  try {
-    const cache = await caches.open(PAGE_CACHE);
-    let done = 0;
-    const total = urls.length;
-    for (const u of urls) {
-      if (!(await cache.match(u))) {
-        try { await cache.add(u); } catch (_) { /* offline or flaky: retried next visit */ }
-      }
-      if (await cache.match(u)) done++;
-      await broadcast({ type: 'progress', done, total });
+  const my = ++gen;
+  const cache = await caches.open(PAGE_CACHE);
+  let done = 0;
+  const total = urls.length;
+  for (const u of urls) {
+    if (my !== gen) return;
+    if (!(await cache.match(u))) {
+      try { await cache.add(u); } catch (_) { /* offline or flaky: retried next visit */ }
     }
-  } finally { precaching = false; }
+    if (await cache.match(u)) done++;
+    if (my === gen) await broadcast({ type: 'progress', done, total });
+  }
+}
+
+async function dropPages() {
+  gen++;
+  await caches.delete(PAGE_CACHE);
 }
 
 self.addEventListener('message', e => {
   const d = e.data || {};
   if (d.type === 'skip-waiting') self.skipWaiting();
   else if (d.type === 'precache' && Array.isArray(d.pages)) e.waitUntil(precache(d.pages));
+  else if (d.type === 'drop-pages') e.waitUntil(dropPages());
 });
 
 self.addEventListener('fetch', e => {
@@ -51,7 +57,11 @@ self.addEventListener('fetch', e => {
     if (hit) return hit;
     try {
       const res = await fetch(e.request);
-      if (res.ok && url.pathname.includes('/pages/')) caches.open(PAGE_CACHE).then(c => c.put(e.request, res.clone()));
+      // pages read while offline saving is on are kept too; with it off nothing is stored
+      if (res.ok && url.pathname.includes('/pages/') && await caches.has(PAGE_CACHE)) {
+        const copy = res.clone();
+        caches.open(PAGE_CACHE).then(c => c.put(e.request, copy));
+      }
       return res;
     } catch (err) {
       if (e.request.mode === 'navigate') return (await caches.match('./index.html')) || Response.error();

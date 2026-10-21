@@ -53,7 +53,7 @@ button{cursor:pointer}
 .spread{height:100%;max-width:100%;display:flex;flex-direction:row;justify-content:center;align-items:center;transition:transform .2s ease,opacity .2s ease}
 .spread.out-l{transform:translateX(-20px);opacity:0}.spread.out-r{transform:translateX(20px);opacity:0}
 .pg{height:100%;aspect-ratio:600/975;max-width:100%;background:#fffcdb;box-shadow:var(--shadow);overflow:hidden;border-radius:3px;
-  display:flex;flex-direction:column;container-type:size}
+  display:flex;flex-direction:column;container-type:size;position:relative}
 .spread.two .pg{max-width:50%}
 .spread.two .pg:first-child{border-radius:0 3px 3px 0}
 .spread.two .pg:last-child{border-radius:3px 0 0 3px}
@@ -63,6 +63,7 @@ button{cursor:pointer}
 :root[data-tone="warm"] .pg{background:#f3e7c9}
 /* page number strip under each page, as in a printed mushaf */
 .pno{flex:none;height:4.4cqh;display:grid;place-items:center;color:#1f5c48;font:600 2.3cqh/1 var(--f-ar);font-variant-numeric:lining-nums tabular-nums}
+.pg .miss{position:absolute;left:10%;right:10%;top:45%;text-align:center;color:#5d6b63;font-size:14px;line-height:1.6}
 .pno span{min-width:5.2cqh;padding:.12em .6em;border:1px solid #c9a24d;border-radius:1em;text-align:center;filter:brightness(var(--dim,1))}
 :root[data-tone="night"] .pno{color:#d7a947}
 :root[data-tone="night"] .pno span{border-color:#6f5a2a}
@@ -138,6 +139,7 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
 .row2{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 16px;font-size:14px}
 .row2 small{display:block;color:var(--muted);font-size:12px}
 .pill{border:1px solid var(--line);background:var(--ground);border-radius:10px;padding:8px 12px;font-size:13px;white-space:nowrap}
+.pill[aria-pressed="true"]{background:var(--green-soft);border-color:var(--green);color:var(--green);font-weight:600}
 .pill.primary{background:var(--green);color:var(--surface);border-color:var(--green);font-weight:600}
 .meter{height:6px;margin:2px 16px 0;border-radius:3px;background:var(--line);overflow:hidden}
 .meter i{display:block;height:100%;width:0;background:var(--green);transition:width .2s}
@@ -215,7 +217,7 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
     <div class="row2"><span>إبقاء الشاشة مضاءة<small>أثناء القراءة</small></span><button class="pill" id="wakeBtn" aria-pressed="true">مفعّل</button></div>
     <div class="row2"><span>اتجاه الشاشة<small id="oriNote">تدوير حر</small></span><button class="pill" id="oriBtn">تلقائي</button></div>
     <div class="sec">التطبيق</div>
-    <div class="row2"><span>القراءة دون اتصال<small id="offNote">جارٍ التحقق…</small></span></div>
+    <div class="row2"><span>القراءة دون اتصال<small id="offNote">جارٍ التحقق…</small></span><button class="pill" id="offBtn" aria-pressed="false" disabled>متوقف</button></div>
     <div class="meter" id="offMeter" hidden><i id="offBar"></i></div>
     <div class="row2" id="installRow" hidden><span>تثبيت التطبيق<small>أضفه إلى الشاشة الرئيسية</small></span><button class="pill primary" id="installBtn">تثبيت</button></div>
   </div>
@@ -260,6 +262,8 @@ function makePage(p){
   var img=document.createElement('img'); img.alt='الصفحة '+p; img.decoding='async'; img.src=PAGES[p-1];
   var n=document.createElement('div'); n.className='pno'; n.setAttribute('aria-hidden','true');
   var ns=document.createElement('span'); ns.textContent=p; n.appendChild(ns);
+  img.onerror=function(){ img.style.visibility='hidden'; if(d.querySelector('.miss')) return; var m=document.createElement('div'); m.className='miss';
+    m.textContent='هذه الصفحة غير محفوظة على الجهاز. اتصل بالإنترنت، أو فعّل «القراءة دون اتصال» من الفهرس.'; d.appendChild(m); };
   d.append(img,n); return d;
 }
 function warm(p){ if(p>=1&&p<=N){ var i=new Image(); i.decoding='async'; i.src=PAGES[p-1]; if(i.decode) i.decode().catch(function(){}); } }
@@ -452,14 +456,26 @@ addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); install
 addEventListener('appinstalled', function(){ installEvt=null; $('installRow').hidden=true; toast('تم تثبيت التطبيق'); });
 $('installBtn').onclick=function(){ if(!installEvt) return; installEvt.prompt(); installEvt.userChoice.then(function(){ installEvt=null; $('installRow').hidden=true; }); };
 
+/* offline reading is optional: off by default, on keeps every page on the device (about 8 MB) */
+var PAGE_CACHE='warsh-pages-v1';   // same name as in sw.js
+var offOn=false, offReady=false;
+function offBtnUi(){ var b=$('offBtn'); b.textContent=offOn?'مفعّل':'متوقف'; b.setAttribute('aria-pressed',String(offOn)); b.disabled=!offReady; }
 function offUi(done,total){
   var note=$('offNote'), m=$('offMeter');
+  if(!offOn){ note.textContent='الصفحات لا تُحفظ على الجهاز (التفعيل يحفظ نحو 8 ميغابايت)'; m.hidden=true; return; }
   if(done>=total){ note.textContent='حُفظت جميع الصفحات ('+total+') على هذا الجهاز'; m.hidden=true; return; }
   note.textContent='جارٍ حفظ الصفحات… '+done+' من '+total; m.hidden=false; $('offBar').style.width=Math.round(done/total*100)+'%';
 }
+function swPost(msg){ navigator.serviceWorker.ready.then(function(reg){ if(reg.active) reg.active.postMessage(msg); }); }
+function offStart(){ offUi(0,N); swPost({type:'precache', pages:PAGES}); }
+$('offBtn').onclick=function(){
+  offOn=!offOn; store.set('offline',offOn); offBtnUi();
+  if(offOn) offStart();
+  else { swPost({type:'drop-pages'}); offUi(); toast('حُذفت الصفحات المحفوظة'); }
+};
 function showUpdate(w){ $('updateBanner').hidden=false; $('updateBtn').onclick=function(){ w.postMessage({type:'skip-waiting'}); }; }
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.addEventListener('message', function(e){ var d=e.data||{}; if(d.type==='progress') offUi(d.done,d.total); });
+  navigator.serviceWorker.addEventListener('message', function(e){ var d=e.data||{}; if(d.type==='progress' && offOn) offUi(d.done,d.total); });
   var hadController=!!navigator.serviceWorker.controller, refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange', function(){ if(refreshing||!hadController) return; refreshing=true; location.reload(); });
   addEventListener('load', function(){
@@ -469,10 +485,12 @@ if('serviceWorker' in navigator){
       reg.addEventListener('updatefound', function(){ if(reg.installing) watch(reg.installing); });
       setInterval(function(){ reg.update().catch(function(){}); }, 60*60*1000);
     }).catch(function(){ $('offNote').textContent='القراءة دون اتصال غير متاحة في هذا المتصفح'; });
-    navigator.serviceWorker.ready.then(function(reg){
-      var sd=navigator.connection && navigator.connection.saveData;
-      if(sd){ $('offNote').textContent='توفير البيانات مفعّل: تُحفظ الصفحات أثناء قراءتها'; return; }
-      if(reg.active) reg.active.postMessage({type:'precache', pages:PAGES});
+    navigator.serviceWorker.ready.then(function(){
+      // pages saved by an earlier version count as switched on
+      return caches.has(PAGE_CACHE).then(function(has){ offOn = store.get('offline', has); });
+    }).catch(function(){}).then(function(){
+      offReady=true; offBtnUi();
+      if(offOn) offStart(); else offUi();
     });
   });
 } else { $('offNote').textContent='القراءة دون اتصال غير متاحة في هذا المتصفح'; }
