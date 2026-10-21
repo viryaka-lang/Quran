@@ -1,15 +1,19 @@
-# Warsh Mushaf · Al-Fatiha & Al-Baqarah
+<div dir="rtl">
 
-An installable, offline-capable PWA of the Warsh mushaf (single self-contained `index.html`).
+# مصحف ورش · الفاتحة والبقرة
 
-## Hosting
-Serve over HTTPS (required for install). With GitHub Pages: Settings → Pages → deploy from branch, root folder.
+تطبيق ويب تقدّمي (PWA) قابل للتثبيت لمصحف التجويد برواية ورش عن نافع، ويعمل دون اتصال بالإنترنت.
 
-## Install on Android
-Open the Pages URL in Chrome → menu (⋮) → **Install app** / **Add to Home screen**.
+## الاستضافة
+يجب نشر التطبيق عبر HTTPS حتى يمكن تثبيته. باستخدام GitHub Pages: الإعدادات ← Pages ← النشر من فرع، المجلد الجذر.
 
-## Features
-- Page images are separate files in `pages/` (HTML is ~35 KB) and are saved on the device after the first visit for full offline reading.
-- Day / Warm / Night reading tones plus a dim slider (`N` key cycles tone).
-- Update prompt when a new version is deployed (bump `SHELL` in `sw.js` to ship one).
-- Install button, home-screen shortcuts (Al-Fatiha, Al-Baqarah, Bookmarks), keep-screen-on, orientation lock.
+## التثبيت على أندرويد
+افتح رابط الموقع في متصفح Chrome ← القائمة (⋮) ← **تثبيت التطبيق** أو **الإضافة إلى الشاشة الرئيسية**.
+
+## المزايا
+- صور الصفحات ملفات مستقلة في مجلد `pages/` (حجم الصفحة الرئيسية نحو 35 كيلوبايت)، وتُحفظ على الجهاز بعد الزيارة الأولى للقراءة الكاملة دون اتصال.
+- أوضاع القراءة: نهاري، دافئ، ليلي، مع شريط للتحكم في السطوع (المفتاح `N` يبدّل الوضع).
+- تنبيه عند توفر إصدار جديد (لإصدار تحديث غيّر قيمة `SHELL` في `sw.js`).
+- زر للتثبيت، واختصارات على أيقونة التطبيق (سورة الفاتحة، سورة البقرة، العلامات)، وإبقاء الشاشة مضاءة، وتثبيت اتجاه الشاشة.
+
+</div>
