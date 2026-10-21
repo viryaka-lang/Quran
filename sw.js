@@ -1,5 +1,5 @@
 // Shell is versioned (bump SHELL to ship an update); page images live in their own cache and survive shell updates.
-const SHELL = 'warsh-shell-v2';
+const SHELL = 'warsh-shell-v3';
 const PAGE_CACHE = 'warsh-pages-v1';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-192.png', './icons/icon-maskable-512.png', './icons/icon-monochrome-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png'];
 
