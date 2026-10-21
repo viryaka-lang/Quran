@@ -179,6 +179,9 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
     <button class="iconbtn" id="bmBtn" aria-label="ضع علامة على هذه الصفحة" title="علامة (B)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path id="bmPath" d="M6 3.5h12v17l-6-4.2-6 4.2z"/></svg>
     </button>
+    <button class="iconbtn" id="trackBtn" aria-label="الموضع: الورد اليومي. التبديل إلى التعلّم" title="الورد اليومي / التعلّم (T)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g id="trackIco"></g></svg>
+    </button>
     <button class="iconbtn" id="themeBtn" aria-label="وضع القراءة: نهاري" title="وضع القراءة (N)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><g id="toneIco"></g></svg>
     </button>
@@ -222,6 +225,8 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
     <div id="surahList"></div>
     <div class="sec">الأحزاب</div>
     <div id="hizbList"></div>
+    <div class="sec">موضع القراءة</div>
+    <div id="trackList"></div>
     <div class="sec">العلامات</div>
     <div id="bmList"></div>
     <div class="sec">العرض</div>
@@ -248,7 +253,7 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
   </div>
   <div class="foot">
     اسحب الصفحة أو اضغط على جانبَيها لتقليبها، واضغط على وسطها لإظهار الأزرار أو إخفائها.
-    <br><kbd>←</kbd> <kbd>→</kbd> تقليب · <kbd>F</kbd> ملء الشاشة · <kbd>B</kbd> علامة · <kbd>I</kbd> الفهرس · <kbd>N</kbd> وضع القراءة · <kbd>Z</kbd> ملء الشاشة بالصفحة
+    <br><kbd>←</kbd> <kbd>→</kbd> تقليب · <kbd>F</kbd> ملء الشاشة · <kbd>B</kbd> علامة · <kbd>T</kbd> الورد/التعلّم · <kbd>I</kbd> الفهرس · <kbd>N</kbd> وضع القراءة · <kbd>Z</kbd> ملء الشاشة بالصفحة
     <br>صور الصفحات: مصحف التجويد برواية ورش، <span dir="ltr">easyquran-eg.com</span>
   </div>
 </aside>
@@ -277,6 +282,9 @@ var store={get:function(k,d){try{var v=localStorage.getItem('warsh12.'+k);return
 function $(id){ return document.getElementById(id); }
 
 var page = 1, bookmarks = store.get('bookmarks', []), drawerOpen = false;
+/* two reading positions, each remembering its own page: the daily portion and learning */
+var TRACKS = {daily:'الورد اليومي', learn:'التعلّم'}, track = store.get('track','daily')==='learn' ? 'learn' : 'daily';
+var pos = store.get('pos', null) || {daily: store.get('page',1), learn: 1};
 var stage=$('stage'), cur=null, slider=$('slider'), pageBox=$('pageBox');
 function twoUp(){ return matchMedia('(min-width: 900px) and (min-aspect-ratio: 5/4)').matches; }
 function pagesFor(p){ if(!twoUp()) return [p]; var a = p%2 ? p : p-1; return a+1<=N ? [a,a+1] : [a]; }
@@ -306,7 +314,7 @@ function target(dir){ var ps=pagesFor(page), t = dir>0 ? ps[ps.length-1]+1 : ps[
 function go(p, opts){
   opts = opts===true ? {instant:true} : (opts||{});
   p = Math.max(1, Math.min(N, parseInt(p,10)||1));
-  var prev = page; page = p; store.set('page', page);
+  var prev = page; page = p; pos[track] = page; store.set('pos', pos);
   var ps = pagesFor(p), key = ps.join();
   if(!cur || cur.dataset.ps!==key){
     var d = opts.drag, old = cur, mode = (opts.instant || !old) ? 'none' : animMode;
@@ -452,6 +460,25 @@ function toggleBookmark(){
 }
 $('bmBtn').onclick=toggleBookmark;
 
+/* ---------- reading positions: daily portion / learning ---------- */
+var TRACK_ICO = {
+  daily:'<path d="M3 5.5c2.6-1 5.6-.8 9 1.2 3.4-2 6.4-2.2 9-1.2v13c-2.6-1-5.6-.8-9 1.2-3.4-2-6.4-2.2-9-1.2z"/><path d="M12 6.7v13"/>',
+  learn:'<path d="M2 9.5l10-5 10 5-10 5z"/><path d="M6 11.5v4.8c3.2 2.6 8.8 2.6 12 0v-4.8"/><path d="M22 9.5v5"/>'};
+function trackUi(){
+  var other = track==='daily' ? 'learn' : 'daily';
+  $('trackIco').innerHTML = TRACK_ICO[track];
+  $('trackBtn').classList.toggle('on', track==='learn');
+  $('trackBtn').setAttribute('aria-label', 'الموضع: '+TRACKS[track]+'. التبديل إلى '+TRACKS[other]);
+}
+function setTrack(t){
+  if(t===track) return;
+  pos[track]=page; track=t; store.set('track',track); store.set('pos',pos); trackUi();
+  go(pos[track]||1); toast(TRACKS[track]+' · الصفحة '+page);
+}
+function toggleTrack(){ setTrack(track==='daily' ? 'learn' : 'daily'); }
+$('trackBtn').onclick=toggleTrack;
+trackUi();
+
 /* ---------- index ---------- */
 function item(no, title, sub, ar, cur, onclick){
   var b=document.createElement('button'); b.className='item'+(cur?' cur':'');
@@ -467,6 +494,11 @@ function renderIndex(){
   var hl=$('hizbList'); hl.innerHTML=''; var curH=hizbOf(ps[0])[0];
   HIZB.forEach(function(h){ var v=firstVerse(h[1]);
     hl.appendChild(item(h[0], 'الحزب '+h[0], 'الجزء '+h[2]+' · يبدأ في الصفحة '+h[1], '', h[0]===curH, function(){ go(h[1]); closeIndex(); })); });
+  var tl=$('trackList'); tl.innerHTML='';
+  ['daily','learn'].forEach(function(t){ var p = t===track ? page : (pos[t]||1), s=surahOn(p);
+    var row=item('', TRACKS[t], 'الصفحة '+p+' من '+N+' · سورة '+s.ar+(t===track?' · الحالي':''), '', t===track, function(){ setTrack(t); closeIndex(); });
+    row.querySelector('.no').innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(-45deg)">'+TRACK_ICO[t]+'</svg>';
+    tl.appendChild(row); });
   var bl=$('bmList'); bl.innerHTML='';
   if(!bookmarks.length){ var e=document.createElement('div'); e.className='empty'; e.textContent='لا توجد علامات بعد. استخدم زر العلامة في الأعلى، أو اضغط B.'; bl.appendChild(e); }
   bookmarks.forEach(function(p){
@@ -584,7 +616,8 @@ if('serviceWorker' in navigator){
   var hadController=!!navigator.serviceWorker.controller, refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange', function(){ if(refreshing||!hadController) return; refreshing=true; location.reload(); });
   addEventListener('load', function(){
-    navigator.serviceWorker.register('sw.js').then(function(reg){
+    navigator.serviceWorker.register('sw.js', {updateViaCache:'none'})   // releases change only version.js, so never take it from the HTTP cache
+     .then(function(reg){
       function watch(w){ w.addEventListener('statechange', function(){ if(w.state==='installed' && navigator.serviceWorker.controller) showUpdate(w); }); }
       if(reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
       reg.addEventListener('updatefound', function(){ if(reg.installing) watch(reg.installing); });
@@ -614,6 +647,7 @@ document.addEventListener('keydown', function(e){
   else if(k==='n'){ cycleTone(); showUI(); }
   else if(k==='z'){ setFit(root.dataset.fit==='fill'?'fit':'fill'); toast(root.dataset.fit==='fill'?'ملء الشاشة':'ملاءمة الصفحة'); }
   else if(k==='b'){ toggleBookmark(); showUI(); }
+  else if(k==='t'){ toggleTrack(); showUI(); }
   else if(k==='i'||k==='/'){ e.preventDefault(); openIndex(); }
 });
 var rz; addEventListener('resize', function(){ clearTimeout(rz); rz=setTimeout(function(){ if(cur) cur.remove(); cur=null; go(page,true); },120); });
@@ -623,7 +657,7 @@ var rz; addEventListener('resize', function(){ clearTimeout(rz); rz=setTimeout(f
   var t=store.get('tone',null); if(!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'day';
   setTone(t,true); setFit(store.get('fit','fit')); setDim(store.get('dim',100)); oriApply();
   var q=new URLSearchParams(location.search), qp=parseInt(q.get('page'),10);
-  go(qp>=1 ? qp : store.get('page',1), true);
+  go(qp>=1 ? qp : (pos[track]||1), true);
   if(q.get('open')==='bookmarks'){ openIndex(); setTimeout(function(){ $('bmList').scrollIntoView(); },300); }
   hint.innerHTML = (fsSupported ? '<b>اضغط في أي مكان للقراءة بملء الشاشة</b>' : '<b>بسم الله</b>') +
     'اسحب أو اضغط على الجانبين لتقليب الصفحات، وعلى الوسط لإظهار الأزرار.';
