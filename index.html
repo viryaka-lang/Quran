@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#1f5c48">
 <meta name="color-scheme" content="light dark">
 <link rel="manifest" href="manifest.webmanifest">
+<script src="version.js"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>مصحف ورش · الفاتحة والبقرة</title>
@@ -238,6 +239,7 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
     <div class="sec">التطبيق</div>
     <div class="row2"><span>القراءة دون اتصال<small id="offNote">جارٍ التحقق…</small></span><button class="pill" id="offBtn" aria-pressed="false" disabled>متوقف</button></div>
     <div class="meter" id="offMeter" hidden><i id="offBar"></i></div>
+    <div class="row2"><span>الإصدار<small id="verDate"></small></span><b id="verNo" dir="ltr"></b></div>
     <div class="row2" id="installRow" hidden><span>تثبيت التطبيق<small>أضفه إلى الشاشة الرئيسية</small></span><button class="pill primary" id="installBtn">تثبيت</button></div>
   </div>
   <div class="foot">
@@ -430,6 +432,10 @@ function buzzUi(){ var b=$('buzzBtn'); b.textContent = !canBuzz ? 'غير مدع
 function buzz(){ if(buzzOn && canBuzz){ try{ navigator.vibrate(12); }catch(_){} } }
 $('buzzBtn').onclick=function(){ buzzOn=!buzzOn; store.set('buzz',buzzOn); buzzUi(); if(buzzOn) buzz(); };
 setAnim(animMode); buzzUi();
+
+/* ---------- version (version.js, raised on every commit) ---------- */
+$('verNo').textContent = self.APP_VERSION || '–';
+$('verDate').textContent = self.APP_DATE ? 'تاريخ الإصدار '+self.APP_DATE : '';
 
 /* ---------- bookmarks ---------- */
 var toastTimer;
