@@ -48,15 +48,21 @@ button{cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* the page */
-.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;container-type:size;
   padding:max(4px,env(safe-area-inset-top,0px)) max(4px,env(safe-area-inset-right,0px)) max(4px,env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px));touch-action:pan-y pinch-zoom}
 .spread{height:100%;max-width:100%;display:flex;flex-direction:row;justify-content:center;align-items:center;transition:transform .2s ease,opacity .2s ease}
 .spread.out-l{transform:translateX(-20px);opacity:0}.spread.out-r{transform:translateX(20px);opacity:0}
-.pg{height:100%;aspect-ratio:600/975;max-width:100%;background:#fffcdb;box-shadow:var(--shadow);overflow:hidden;border-radius:3px;
+.pg{width:min(100cqw,100cqh*600/975);aspect-ratio:600/975;background:#fffcdb;box-shadow:var(--shadow);overflow:hidden;border-radius:3px;
   display:flex;flex-direction:column;container-type:size;position:relative}
-.spread.two .pg{max-width:50%}
+.spread.two .pg{width:min(50cqw,100cqh*600/975)}
 .spread.two .pg:first-child{border-radius:0 3px 3px 0}
 .spread.two .pg:last-child{border-radius:3px 0 0 3px}
+/* fill mode: the page is stretched to the whole screen instead of keeping its proportions */
+:root[data-fit="fill"] .stage{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+:root[data-fit="fill"] .spread{width:100%}
+:root[data-fit="fill"] .pg{aspect-ratio:auto;width:100cqw;height:100cqh;border-radius:0;box-shadow:none}
+:root[data-fit="fill"] .spread.two .pg{width:50cqw;border-radius:0}
+:root[data-fit="fill"] .pg img{object-fit:fill}
 .pg img{display:block;width:100%;flex:1 1 0;min-height:0;object-fit:contain;-webkit-user-drag:none;pointer-events:none;
   filter:brightness(var(--dim,1));transition:filter .25s ease}
 /* reading tones: warm softens the white, night inverts the page and keeps the tajweed colours readable */
@@ -213,6 +219,10 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
     <div class="seg" id="toneSeg" role="group" aria-label="وضع القراءة">
       <button data-tone="day">نهاري</button><button data-tone="warm">دافئ</button><button data-tone="night">ليلي</button>
     </div>
+    <div class="seg" id="fitSeg" role="group" aria-label="حجم الصفحة">
+      <button data-fit="fit">ملاءمة الصفحة</button><button data-fit="fill">ملء الشاشة</button>
+    </div>
+    <div class="gomsg" id="fitNote"></div>
     <label class="dim">السطوع <input type="range" id="dimRange" min="50" max="100" value="100" aria-label="سطوع الصفحة"> </label>
     <div class="row2"><span>إبقاء الشاشة مضاءة<small>أثناء القراءة</small></span><button class="pill" id="wakeBtn" aria-pressed="true">مفعّل</button></div>
     <div class="row2"><span>اتجاه الشاشة<small id="oriNote">تدوير حر</small></span><button class="pill" id="oriBtn">تلقائي</button></div>
@@ -223,7 +233,7 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
   </div>
   <div class="foot">
     اضغط على جانبَي الصفحة لتقليبها، وعلى وسطها لإظهار الأزرار أو إخفائها.
-    <br><kbd>←</kbd> <kbd>→</kbd> تقليب · <kbd>F</kbd> ملء الشاشة · <kbd>B</kbd> علامة · <kbd>I</kbd> الفهرس · <kbd>N</kbd> وضع القراءة
+    <br><kbd>←</kbd> <kbd>→</kbd> تقليب · <kbd>F</kbd> ملء الشاشة · <kbd>B</kbd> علامة · <kbd>I</kbd> الفهرس · <kbd>N</kbd> وضع القراءة · <kbd>Z</kbd> ملء الشاشة بالصفحة
     <br>صور الصفحات: مصحف التجويد برواية ورش، <span dir="ltr">easyquran-eg.com</span>
   </div>
 </aside>
@@ -422,6 +432,12 @@ function setTone(t, quiet){
 function cycleTone(){ setTone(TONES[(TONES.indexOf(root.dataset.tone)+1)%TONES.length]); }
 $('themeBtn').onclick=cycleTone;
 Array.prototype.forEach.call($('toneSeg').children, function(b){ b.onclick=function(){ setTone(b.dataset.tone); }; });
+function setFit(f){
+  f = f==='fill' ? 'fill' : 'fit'; root.dataset.fit=f; store.set('fit',f);
+  Array.prototype.forEach.call($('fitSeg').children, function(b){ b.setAttribute('aria-pressed', String(b.dataset.fit===f)); });
+  $('fitNote').textContent = f==='fill' ? 'تُمدَّد الصفحة لتملأ الشاشة، فيبدو الخط أطول من أصله.' : 'تظهر الصفحة بأبعادها الأصلية.';
+}
+Array.prototype.forEach.call($('fitSeg').children, function(b){ b.onclick=function(){ setFit(b.dataset.fit); }; });
 function setDim(v){ v=Math.max(50,Math.min(100,+v||100)); root.style.setProperty('--dim', v/100); $('dimRange').value=v; store.set('dim',v); }
 $('dimRange').oninput=function(){ setDim(this.value); };
 
@@ -507,6 +523,7 @@ document.addEventListener('keydown', function(e){
   else if(k==='home'){ go(1); } else if(k==='end'){ go(N); }
   else if(k==='f'){ toggleFs(); }
   else if(k==='n'){ cycleTone(); showUI(); }
+  else if(k==='z'){ setFit(root.dataset.fit==='fill'?'fit':'fill'); toast(root.dataset.fit==='fill'?'ملء الشاشة':'ملاءمة الصفحة'); }
   else if(k==='b'){ toggleBookmark(); showUI(); }
   else if(k==='i'||k==='/'){ e.preventDefault(); openIndex(); }
 });
@@ -515,7 +532,7 @@ var rz; addEventListener('resize', function(){ clearTimeout(rz); rz=setTimeout(f
 /* ---------- start ---------- */
 (function(){
   var t=store.get('tone',null); if(!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'day';
-  setTone(t,true); setDim(store.get('dim',100)); oriApply();
+  setTone(t,true); setFit(store.get('fit','fit')); setDim(store.get('dim',100)); oriApply();
   var q=new URLSearchParams(location.search), qp=parseInt(q.get('page'),10);
   go(qp>=1 ? qp : store.get('page',1), true);
   if(q.get('open')==='bookmarks'){ openIndex(); setTimeout(function(){ $('bmList').scrollIntoView(); },300); }
