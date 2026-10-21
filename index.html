@@ -10,9 +10,10 @@
 <meta name="color-scheme" content="light dark">
 <link rel="manifest" href="manifest.webmanifest">
 <script src="version.js"></script>
+<script src="data.js"></script>
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<title>مصحف ورش · الفاتحة والبقرة</title>
+<title>مصحف ورش</title>
 <style>
 /* Layout: the page fills the screen; header and footer float over it and fade away while reading */
 :root{
@@ -80,6 +81,7 @@ button{cursor:pointer}
   background:#fff;border:max(1px,.16cqh) solid #4a9e7e;color:#000;font:500 1.9cqh/1 Arial,"Helvetica Neue",Roboto,sans-serif;font-variant-numeric:lining-nums tabular-nums;
   filter:brightness(var(--dim,1));transition:filter .25s ease}
 .pno.low{top:94.2%}
+.pno.wide{left:54.4%}   /* pages 601-604: the three-surah label reaches the centre */
 .pg .miss{position:absolute;left:10%;right:10%;top:45%;text-align:center;color:#5d6b63;font-size:14px;line-height:1.6}
 :root[data-tone="warm"] .pg img,:root[data-tone="warm"] .pno{filter:sepia(.4) saturate(.9) brightness(calc(var(--dim,1) * .96))}
 :root[data-tone="night"] .pg{background:#1e1c09}
@@ -199,7 +201,7 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
     <button class="navbtn" id="nextBtn" aria-label="الصفحة التالية">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg><span>التالية</span>
     </button>
-    <input type="range" id="slider" min="1" max="49" value="1" aria-label="الصفحة">
+    <input type="range" id="slider" min="1" max="604" value="1" aria-label="الصفحة">
     <input class="pagebox" id="pageBox" inputmode="numeric" aria-label="انتقل إلى صفحة" value="1">
     <button class="navbtn" id="prevBtn" aria-label="الصفحة السابقة">
       <span>السابقة</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>
@@ -224,7 +226,7 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
    <div id="paneIdx" role="tabpanel" aria-labelledby="tabIdx">
     <div class="sec">انتقل إلى</div>
     <form class="goto" id="gotoForm" autocomplete="off">
-      <input id="gotoInput" dir="auto" placeholder="صفحة 1–49، أو آية مثل 2:255" aria-label="صفحة أو آية">
+      <input id="gotoInput" dir="auto" placeholder="صفحة 1–604، أو آية مثل 2:255" aria-label="صفحة أو آية">
       <button type="submit">اذهب</button>
     </form>
     <div class="gomsg" id="gotoMsg">ترقيم الآيات حسب العدّ المدني الأخير (رواية ورش).</div>
@@ -275,21 +277,22 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
 <div class="banner" id="updateBanner" hidden role="status"><span>يتوفر إصدار جديد.</span><button id="updateBtn">تحديث</button></div>
 
 <script>
-var PAGES = ["pages/01.webp", "pages/02.webp", "pages/03.webp", "pages/04.webp", "pages/05.webp", "pages/06.webp", "pages/07.webp", "pages/08.webp", "pages/09.webp", "pages/10.webp", "pages/11.webp", "pages/12.webp", "pages/13.webp", "pages/14.webp", "pages/15.webp", "pages/16.webp", "pages/17.webp", "pages/18.webp", "pages/19.webp", "pages/20.webp", "pages/21.webp", "pages/22.webp", "pages/23.webp", "pages/24.webp", "pages/25.webp", "pages/26.webp", "pages/27.webp", "pages/28.webp", "pages/29.webp", "pages/30.webp", "pages/31.webp", "pages/32.webp", "pages/33.webp", "pages/34.webp", "pages/35.webp", "pages/36.webp", "pages/37.webp", "pages/38.webp", "pages/39.webp", "pages/40.webp", "pages/41.webp", "pages/42.webp", "pages/43.webp", "pages/44.webp", "pages/45.webp", "pages/46.webp", "pages/47.webp", "pages/48.webp", "pages/49.webp"];
-var N = 49;
-var COUNTS = [7, 285];             // Warsh verse counts
-var ENDS = [6,10,21,29,34,42,53,62,66,74,81,88,93,98,106,110,117,124,131,139,146,150,158,168,174,181,186,191,195,201,206,214,219,224,228,234,237,241,249,252,256,261,264,269,274,279,286,287,291];               // index of the last verse on each page, counting from 0
-var HIZB = [[1,1,1],[2,11,1],[3,22,2],[4,32,2],[5,42,3]];   // [hizb, first page, juz]
-var SURAHS = [{n:1,ar:"الفاتحة",page:1,verses:7},{n:2,ar:"البقرة",page:2,verses:285}];
+var M = self.MUSHAF, N = M.pageStart.length - 2;   // 604 pages, from data.js
+var PAGES = []; for(var q=1; q<=N; q++) PAGES.push('pages/'+String(q).padStart(3,'0')+'.webp');
+/* verses are numbered 1-6214 through the whole Quran ("id"); pages and surahs map to and from that */
+function lastLE(arr, x, lo){ var a=lo||0, b=arr.length-1; while(a<b){ var m=(a+b+1)>>1; if(arr[m]<=x) a=m; else b=m-1; } return a; }
+var SURAH_START = M.surahs.map(function(x){ return x[0]; });
+function pageOfId(id){ return Math.max(1, Math.min(N, lastLE(M.pageStart, id, 1))); }
+var SURAHS = M.surahs.map(function(x,i){ return {n:i+1, ar:x[2], start:x[0], verses:x[1], page:pageOfId(x[0])}; });
+var HIZB = M.hizb.map(function(pg,i){ return [i+1, pg, (i>>1)+1]; });   // [hizb, first page, juz]
 function ayat(n){ return n+' '+(n%100>=3&&n%100<=10 ? 'آيات' : 'آية'); }
-
-/* verse <-> page */
-var VID = []; COUNTS.forEach(function(c,i){ for(var a=1;a<=c;a++) VID.push([i+1,a]); });
-function firstVerse(p){ var a = p>1 ? ENDS[p-2]+1 : 0; return VID[a]; }
-function lastVerse(p){ return VID[ENDS[p-1]]; }
-function pageOfVerse(s,a){ var idx = s===1 ? a-1 : COUNTS[0]+a-1; for(var p=1;p<=N;p++) if(ENDS[p-1]>=idx) return p; return N; }
-function surahOn(p){ return p===1 ? SURAHS[0] : SURAHS[1]; }
-function hizbOf(p){ var h=HIZB[0]; HIZB.forEach(function(x){ if(p>=x[1]) h=x; }); return h; }
+function verseOf(id){ var k=lastLE(SURAH_START, id); return [k+1, id-SURAH_START[k]+1]; }       // [surah, verse]
+function firstVerse(p){ return verseOf(M.pageStart[p]); }
+function lastVerse(p){ return verseOf(Math.max(M.pageStart[p], M.pageStart[p+1]-1)); }
+function pageOfVerse(s,a){ return pageOfId(SURAHS[s-1].start + a - 1); }
+function surahsOn(p){ var a=verseOf(M.pageStart[p])[0], b=lastVerse(p)[0], out=[]; for(var k=a;k<=b;k++) out.push(SURAHS[k-1]); return out; }
+function surahOn(p){ return SURAHS[firstVerse(p)[0]-1]; }
+function hizbOf(p){ return HIZB[lastLE(M.hizb, p)]; }
 
 var store={get:function(k,d){try{var v=localStorage.getItem('warsh12.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
   set:function(k,v){try{localStorage.setItem('warsh12.'+k,JSON.stringify(v))}catch(e){}}};
@@ -307,7 +310,7 @@ function pagesFor(p){ if(!twoUp()) return [p]; var a = p%2 ? p : p-1; return a+1
 function makePage(p){
   var d=document.createElement('div'); d.className=p>2?'pg framed':'pg'; d.dataset.p=p;
   var img=document.createElement('img'); img.alt='الصفحة '+p; img.decoding='async'; img.src=PAGES[p-1];
-  var n=document.createElement('div'); n.className=p<=2?'pno low':'pno'; n.setAttribute('aria-hidden','true'); n.textContent=p;
+  var n=document.createElement('div'); n.className=p<=2?'pno low':p>=601?'pno wide':'pno'; n.setAttribute('aria-hidden','true'); n.textContent=p;
   img.onerror=function(){ img.style.visibility='hidden'; n.hidden=true; if(d.querySelector('.miss')) return; var m=document.createElement('div'); m.className='miss';
     m.textContent='هذه الصفحة غير محفوظة على الجهاز. اتصل بالإنترنت، أو فعّل «القراءة دون اتصال» من الإعدادات.'; d.appendChild(m); };
   d.append(img,n); return d;
@@ -357,8 +360,9 @@ function go(p, opts){
 function step(dir){ var t=target(dir); if(t) go(t); }
 function updateChrome(){
   var ps=pagesFor(page);
-  var names=[]; ps.forEach(function(q){ var s=surahOn(q); if(names.indexOf(s.ar)<0) names.push(s.ar); });
-  $('hSurah').textContent = names.join(' · ');
+  var names=[]; ps.forEach(function(q){ surahsOn(q).forEach(function(s){ if(names.indexOf(s.ar)<0) names.push(s.ar); }); });
+  // three or more (the last pages, or a spread) don't fit beside the buttons: first and last
+  $('hSurah').textContent = names.length>2 ? names[0]+' – '+names[names.length-1] : names.join(' · ');
   var h=hizbOf(ps[0]);
   $('hMeta').textContent = 'الحزب '+h[0]+' · الجزء '+h[2]+' · الصفحة '+ps.join('–');
   slider.value=page; pageBox.value=ps.join('–');
@@ -516,7 +520,8 @@ function item(no, title, sub, ar, cur, onclick){
 function renderIndex(){
   var ps=pagesFor(page);
   var sl=$('surahList'); sl.innerHTML='';
-  SURAHS.forEach(function(s){ sl.appendChild(item(s.n, 'سورة '+s.ar, ayat(s.verses)+' · الصفحة '+s.page, '', ps.indexOf(s.page)>=0 || (s.n===2&&page>2), function(){ jump(s.page); closeIndex(); })); });
+  var onPage=[]; ps.forEach(function(q){ surahsOn(q).forEach(function(x){ onPage.push(x.n); }); });
+  SURAHS.forEach(function(s){ sl.appendChild(item(s.n, 'سورة '+s.ar, ayat(s.verses)+' · الصفحة '+s.page, '', onPage.indexOf(s.n)>=0, function(){ jump(s.page); closeIndex(); })); });
   var hl=$('hizbList'); hl.innerHTML=''; var curH=hizbOf(ps[0])[0];
   HIZB.forEach(function(h){ var v=firstVerse(h[1]);
     hl.appendChild(item(h[0], 'الحزب '+h[0], 'الجزء '+h[2]+' · يبدأ في الصفحة '+h[1], '', h[0]===curH, function(){ jump(h[1]); closeIndex(); })); });
@@ -529,7 +534,7 @@ function renderIndex(){
   if(!bookmarks.length){ var e=document.createElement('div'); e.className='empty'; e.textContent='لا توجد علامات بعد. استخدم زر العلامة في الأعلى، أو اضغط B.'; bl.appendChild(e); }
   bookmarks.forEach(function(p){
     var v=firstVerse(p), w=lastVerse(p), s=surahOn(p);
-    var row=item('', 'الصفحة '+p, 'سورة '+s.ar+' · الآيات '+v[1]+(w[1]!==v[1]||w[0]!==v[0]?'–'+w[1]:''), '', ps.indexOf(p)>=0, function(){ jump(p); closeIndex(); });
+    var row=item('', 'الصفحة '+p, 'سورة '+s.ar+' · '+(v[0]===w[0] ? 'الآيات '+v[1]+(w[1]!==v[1]?'–'+w[1]:'') : 'من الآية '+v[1]), '', ps.indexOf(p)>=0, function(){ jump(p); closeIndex(); });
     row.querySelector('.no span').textContent='★';
     var x=document.createElement('button'); x.className='iconbtn x'; x.setAttribute('aria-label','إزالة علامة الصفحة '+p);
     x.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>';
@@ -577,11 +582,11 @@ $('gotoForm').onsubmit=function(e){
   e.preventDefault(); var q=$('gotoInput').value.trim().replace(/\s+/g,''), msg=$('gotoMsg');
   var m=q.match(/^(\d+)[:.,/-](\d+)$/);
   if(m){ var s=+m[1], a=+m[2];
-    if(s<1||s>2){ msg.textContent='تحتوي هذه النسخة على سورتي الفاتحة والبقرة فقط.'; msg.classList.add('bad'); return; }
-    if(a<1||a>COUNTS[s-1]){ msg.textContent='عدد آيات سورة '+SURAHS[s-1].ar+' '+COUNTS[s-1]+'.'; msg.classList.add('bad'); return; }
+    if(s<1||s>114){ msg.textContent='رقم السورة من 1 إلى 114.'; msg.classList.add('bad'); return; }
+    if(a<1||a>SURAHS[s-1].verses){ msg.textContent='عدد آيات سورة '+SURAHS[s-1].ar+' '+SURAHS[s-1].verses+'.'; msg.classList.add('bad'); return; }
     var p=pageOfVerse(s,a); jump(p); $('gotoInput').value=''; closeIndex(); toast('سورة '+SURAHS[s-1].ar+'، الآية '+a+': الصفحة '+p); return; }
   if(/^\d+$/.test(q) && +q>=1 && +q<=N){ jump(+q); $('gotoInput').value=''; closeIndex(); return; }
-  msg.textContent='اكتب رقم صفحة من 1 إلى 49، أو آية مثل 2:255.'; msg.classList.add('bad');
+  msg.textContent='اكتب رقم صفحة من 1 إلى '+N+'، أو آية مثل 2:255.'; msg.classList.add('bad');
 };
 
 /* ---------- other controls ---------- */
@@ -650,19 +655,24 @@ addEventListener('appinstalled', function(){ installEvt=null; $('installRow').hi
 $('installBtn').onclick=function(){ if(!installEvt) return; installEvt.prompt(); installEvt.userChoice.then(function(){ installEvt=null; $('installRow').hidden=true; }); };
 
 /* offline reading is optional: off by default, on keeps every page on the device (about 8 MB) */
-var PAGE_CACHE='warsh-pages-v1';   // same name as in sw.js
+var PAGE_CACHE='warsh-pages-v2';   // same name as in sw.js
 var offOn=false, offReady=false;
 function offBtnUi(){ var b=$('offBtn'); b.textContent=offOn?'مفعّل':'متوقف'; b.setAttribute('aria-pressed',String(offOn)); b.disabled=!offReady; }
 function offUi(done,total){
   var note=$('offNote'), m=$('offMeter');
-  if(!offOn){ note.textContent='الصفحات لا تُحفظ على الجهاز (التفعيل يحفظ نحو 8 ميغابايت)'; m.hidden=true; return; }
+  if(!offOn){ note.textContent='الصفحات لا تُحفظ على الجهاز (التفعيل يحفظ المصحف كاملاً، نحو 105 ميغابايت)'; m.hidden=true; return; }
   if(done>=total){ note.textContent='حُفظت جميع الصفحات ('+total+') على هذا الجهاز'; m.hidden=true; return; }
   note.textContent='جارٍ حفظ الصفحات… '+done+' من '+total; m.hidden=false; $('offBar').style.width=Math.round(done/total*100)+'%';
 }
 function swPost(msg){ navigator.serviceWorker.ready.then(function(reg){ if(reg.active) reg.active.postMessage(msg); }); }
-function offStart(){ offUi(0,N); swPost({type:'precache', pages:PAGES}); }
+function offStart(){
+  offUi(0,N);
+  // ask the browser to keep the pages instead of clearing them when space runs low
+  if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function(){});
+  swPost({type:'precache', pages:PAGES});
+}
 $('offBtn').onclick=function(){
-  offOn=!offOn; store.set('offline',offOn); offBtnUi();
+  offOn=!offOn; store.set('offline604',offOn); offBtnUi();
   if(offOn) offStart();
   else { swPost({type:'drop-pages'}); offUi(); toast('حُذفت الصفحات المحفوظة'); }
 };
@@ -681,7 +691,7 @@ if('serviceWorker' in navigator){
     }).catch(function(){ $('offNote').textContent='القراءة دون اتصال غير متاحة في هذا المتصفح'; });
     navigator.serviceWorker.ready.then(function(){
       // pages saved by an earlier version count as switched on
-      return caches.has(PAGE_CACHE).then(function(has){ offOn = store.get('offline', has); });
+      return caches.has(PAGE_CACHE).then(function(has){ offOn = store.get('offline604', has); });
     }).catch(function(){}).then(function(){
       offReady=true; offBtnUi();
       if(offOn) offStart(); else offUi();

@@ -2,8 +2,8 @@
 // installs fresh; page images live in their own cache and survive shell updates.
 importScripts('version.js');
 const SHELL = 'warsh-shell-v' + self.APP_VERSION;
-const PAGE_CACHE = 'warsh-pages-v1';
-const ASSETS = ['./', './index.html', './version.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-192.png', './icons/icon-maskable-512.png', './icons/icon-monochrome-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png'];
+const PAGE_CACHE = 'warsh-pages-v2';
+const ASSETS = ['./', './index.html', './version.js', './data.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-192.png', './icons/icon-maskable-512.png', './icons/icon-monochrome-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(SHELL).then(c => c.addAll(ASSETS)));   // no skipWaiting: the page offers the update
