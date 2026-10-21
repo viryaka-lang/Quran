@@ -148,7 +148,10 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--green);direction:rtl;hei
 .help{padding:4px 16px 8px;font-size:12px;color:var(--muted);line-height:1.7}
 kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--ground)}
 
-.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);
+/* the bottom bar can be switched off in the settings; messages then sit lower */
+:root[data-nobar] .bottom{display:none}
+:root[data-nobar]{--toast-y:24px}
+.toast{position:fixed;left:50%;bottom:calc(var(--toast-y,84px) + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);
   padding:8px 14px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:30;white-space:nowrap}
 .toast.show{opacity:1}
 .seg{display:flex;gap:6px;padding:6px 16px 4px}
@@ -257,6 +260,7 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
     <div class="seg" id="buzzSeg" role="group" aria-label="قوة الاهتزاز" hidden>
       <button data-ms="20">خفيف</button><button data-ms="40">متوسط</button><button data-ms="70">قوي</button>
     </div>
+    <div class="row2"><span>شريط التنقل السفلي<small id="barNote">أزرار التالية والسابقة وشريط الصفحات</small></span><button class="pill" id="barBtn" aria-pressed="true">ظاهر</button></div>
     <div class="row2"><span>إبقاء الشاشة مضاءة<small>أثناء القراءة</small></span><button class="pill" id="wakeBtn" aria-pressed="true">مفعّل</button></div>
     <div class="row2"><span>اتجاه الشاشة<small id="oriNote">تدوير حر</small></span><button class="pill" id="oriBtn">تلقائي</button></div>
     <div class="sec">التطبيق</div>
@@ -620,6 +624,14 @@ function setFit(f){
   $('fitNote').textContent = f==='fill' ? 'تُمدَّد الصفحة لتملأ الشاشة ويُخفى مفتاح ألوان التجويد أسفلها، فيبدو الخط أطول من أصله.' : 'تظهر الصفحة بأبعادها الأصلية.';
 }
 Array.prototype.forEach.call($('fitSeg').children, function(b){ b.onclick=function(){ setFit(b.dataset.fit); }; });
+function setBar(on){
+  if(on) delete root.dataset.nobar; else root.dataset.nobar='1';
+  store.set('bottomBar', on);
+  $('barBtn').textContent = on ? 'ظاهر' : 'مخفي'; $('barBtn').setAttribute('aria-pressed', String(on));
+  $('barNote').textContent = on ? 'أزرار التالية والسابقة وشريط الصفحات'
+                                : 'قلّب الصفحات بالسحب أو بالضغط على الجانبين، وانتقل إلى صفحة أو آية من الفهرس';
+}
+$('barBtn').onclick=function(){ setBar(root.dataset.nobar==='1'); };
 function setDim(v){ v=Math.max(50,Math.min(100,+v||100)); root.style.setProperty('--dim', v/100); $('dimRange').value=v; store.set('dim',v); }
 $('dimRange').oninput=function(){ setDim(this.value); };
 
@@ -722,7 +734,7 @@ var rz; addEventListener('resize', function(){ clearTimeout(rz); rz=setTimeout(f
 /* ---------- start ---------- */
 (function(){
   var t=store.get('tone',null); if(!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'day';
-  setTone(t,true); setFit(store.get('fit','fit')); setDim(store.get('dim',100)); oriApply();
+  setTone(t,true); setBar(store.get('bottomBar',true)); setFit(store.get('fit','fit')); setDim(store.get('dim',100)); oriApply();
   var q=new URLSearchParams(location.search), qp=parseInt(q.get('page'),10);
   go(qp>=1 ? qp : (pos[track]||1), true);
   history.replaceState({app:1, p:page, t:track}, '');
