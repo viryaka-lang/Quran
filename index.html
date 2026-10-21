@@ -66,13 +66,17 @@ button{cursor:pointer}
 :root[data-fit="fill"] .pg{aspect-ratio:auto;width:100cqw;height:100cqh;border-radius:0;box-shadow:none}
 :root[data-fit="fill"] .spread.two .pg{width:50cqw;border-radius:0}
 :root[data-fit="fill"] .pg img{object-fit:fill}
+/* pages 3-49 end in a tajweed colour legend below the frame (rows 1168-1242 of 1242): fill mode pushes it
+   off the bottom of the page so the stretched page ends at the frame */
+:root[data-fit="fill"] .pg.framed{--k:1.06336}
+:root[data-fit="fill"] .pg.framed img{height:calc(100% * var(--k));flex:none}
 .pg img{display:block;width:100%;height:100%;object-fit:contain;-webkit-user-drag:none;pointer-events:none;
   filter:brightness(var(--dim,1));transition:filter .25s ease}
 /* reading tones: warm softens the white, night inverts the page and keeps the tajweed colours readable */
 :root[data-tone="warm"] .pg{background:#f3e7c9}
 /* page number drawn over the image: a label box like the printed «حزب» one, centred in the empty top margin
    (positions measured on the 800x1242 pages); the two decorated opening pages use their bottom margin */
-.pno{position:absolute;left:44.4%;width:11.2%;top:.4%;height:3%;display:grid;place-items:center;
+.pno{position:absolute;left:44.4%;width:11.2%;top:calc(.4% * var(--k,1));height:calc(3% * var(--k,1));display:grid;place-items:center;
   background:#fff;border:max(1px,.16cqh) solid #4a9e7e;color:#000;font:500 1.9cqh/1 Arial,"Helvetica Neue",Roboto,sans-serif;font-variant-numeric:lining-nums tabular-nums;
   filter:brightness(var(--dim,1));transition:filter .25s ease}
 .pno.low{top:94.2%}
@@ -279,7 +283,7 @@ function pagesFor(p){ if(!twoUp()) return [p]; var a = p%2 ? p : p-1; return a+1
 
 /* ---------- pages ---------- */
 function makePage(p){
-  var d=document.createElement('div'); d.className='pg'; d.dataset.p=p;
+  var d=document.createElement('div'); d.className=p>2?'pg framed':'pg'; d.dataset.p=p;
   var img=document.createElement('img'); img.alt='الصفحة '+p; img.decoding='async'; img.src=PAGES[p-1];
   var n=document.createElement('div'); n.className=p<=2?'pno low':'pno'; n.setAttribute('aria-hidden','true'); n.textContent=p;
   img.onerror=function(){ img.style.visibility='hidden'; n.hidden=true; if(d.querySelector('.miss')) return; var m=document.createElement('div'); m.className='miss';
@@ -520,7 +524,7 @@ Array.prototype.forEach.call($('toneSeg').children, function(b){ b.onclick=funct
 function setFit(f){
   f = f==='fill' ? 'fill' : 'fit'; root.dataset.fit=f; store.set('fit',f);
   Array.prototype.forEach.call($('fitSeg').children, function(b){ b.setAttribute('aria-pressed', String(b.dataset.fit===f)); });
-  $('fitNote').textContent = f==='fill' ? 'تُمدَّد الصفحة لتملأ الشاشة، فيبدو الخط أطول من أصله.' : 'تظهر الصفحة بأبعادها الأصلية.';
+  $('fitNote').textContent = f==='fill' ? 'تُمدَّد الصفحة لتملأ الشاشة ويُخفى مفتاح ألوان التجويد أسفلها، فيبدو الخط أطول من أصله.' : 'تظهر الصفحة بأبعادها الأصلية.';
 }
 Array.prototype.forEach.call($('fitSeg').children, function(b){ b.onclick=function(){ setFit(b.dataset.fit); }; });
 function setDim(v){ v=Math.max(50,Math.min(100,+v||100)); root.style.setProperty('--dim', v/100); $('dimRange').value=v; store.set('dim',v); }
