@@ -39,7 +39,7 @@
   --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.5);color-scheme:dark}
 
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
+html,body{height:100%;margin:0;overscroll-behavior:none}
 body{background:var(--ground);color:var(--ink);font:15px/1.45 var(--f-ui);overflow:hidden;-webkit-tap-highlight-color:transparent;
   -webkit-user-select:none;user-select:none;touch-action:manipulation}
 [hidden]{display:none!important}
@@ -48,18 +48,20 @@ button{cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* the page */
-.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;container-type:size;
-  padding:max(4px,env(safe-area-inset-top,0px)) max(4px,env(safe-area-inset-right,0px)) max(4px,env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px));touch-action:pan-y pinch-zoom}
-.spread{height:100%;max-width:100%;display:flex;flex-direction:row;justify-content:center;align-items:center;transition:transform .2s ease,opacity .2s ease}
-.spread.out-l{transform:translateX(-20px);opacity:0}.spread.out-r{transform:translateX(20px);opacity:0}
+/* one-finger gestures belong to the app (swiping turns pages); pinch zoom stays with the browser */
+.stage{position:fixed;inset:0;overflow:hidden;touch-action:pinch-zoom}
+.stage.zoomed{touch-action:auto}
+/* each spread is a full-screen layer, so the current and the next one can slide side by side */
+.spread{position:absolute;inset:0;display:flex;flex-direction:row;justify-content:center;align-items:center;container-type:size;
+  padding:max(4px,env(safe-area-inset-top,0px)) max(4px,env(safe-area-inset-right,0px)) max(4px,env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px));
+  will-change:transform}
 .pg{width:min(100cqw,100cqh*800/1242);aspect-ratio:800/1242;background:#fffcdb;box-shadow:var(--shadow);overflow:hidden;border-radius:3px;
   display:flex;flex-direction:column;container-type:size;position:relative}
 .spread.two .pg{width:min(50cqw,100cqh*800/1242)}
 .spread.two .pg:first-child{border-radius:0 3px 3px 0}
 .spread.two .pg:last-child{border-radius:3px 0 0 3px}
 /* fill mode: the page is stretched to the whole screen instead of keeping its proportions */
-:root[data-fit="fill"] .stage{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
-:root[data-fit="fill"] .spread{width:100%}
+:root[data-fit="fill"] .spread{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
 :root[data-fit="fill"] .pg{aspect-ratio:auto;width:100cqw;height:100cqh;border-radius:0;box-shadow:none}
 :root[data-fit="fill"] .spread.two .pg{width:50cqw;border-radius:0}
 :root[data-fit="fill"] .pg img{object-fit:fill}
@@ -142,6 +144,7 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
 .seg{display:flex;gap:6px;padding:6px 16px 4px}
 .seg button{flex:1;border:1px solid var(--line);background:var(--ground);border-radius:10px;padding:9px 4px;font-size:13px}
 .seg button[aria-pressed="true"]{background:var(--green);color:var(--surface);border-color:var(--green);font-weight:600}
+.cap{padding:10px 16px 0;font-size:13px;color:var(--muted)}
 .dim{display:flex;align-items:center;gap:10px;padding:8px 16px 0;font-size:13px;color:var(--muted)}
 .row2{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 16px;font-size:14px}
 .row2 small{display:block;color:var(--muted);font-size:12px}
@@ -153,11 +156,11 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
 .banner{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:12px;
   background:var(--ink);color:var(--surface);padding:10px 12px 10px 16px;border-radius:14px;box-shadow:var(--shadow);font-size:14px;max-width:calc(100% - 24px)}
 .banner button{border:0;border-radius:9px;background:var(--accent);color:#1c1400;font-weight:600;padding:7px 12px}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){*:not(.spread){transition:none!important}}   /* page animation is its own setting */
 </style>
 </head>
 <body>
-<main class="stage" id="stage" aria-label="صفحة المصحف"><div class="spread" id="spread"></div></main>
+<main class="stage" id="stage" aria-label="صفحة المصحف"></main>
 
 <header class="bar top" id="topbar">
   <div class="row">
@@ -225,6 +228,11 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
     </div>
     <div class="gomsg" id="fitNote"></div>
     <label class="dim">السطوع <input type="range" id="dimRange" min="50" max="100" value="100" aria-label="سطوع الصفحة"> </label>
+    <div class="cap">حركة تقليب الصفحة</div>
+    <div class="seg" id="animSeg" role="group" aria-label="حركة تقليب الصفحة">
+      <button data-anim="slide">انزلاق</button><button data-anim="fade">تلاشٍ</button><button data-anim="none">بدون</button>
+    </div>
+    <div class="row2"><span>اهتزاز عند التقليب<small id="buzzNote">اهتزاز خفيف مع كل صفحة</small></span><button class="pill" id="buzzBtn" aria-pressed="false">متوقف</button></div>
     <div class="row2"><span>إبقاء الشاشة مضاءة<small>أثناء القراءة</small></span><button class="pill" id="wakeBtn" aria-pressed="true">مفعّل</button></div>
     <div class="row2"><span>اتجاه الشاشة<small id="oriNote">تدوير حر</small></span><button class="pill" id="oriBtn">تلقائي</button></div>
     <div class="sec">التطبيق</div>
@@ -233,7 +241,7 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
     <div class="row2" id="installRow" hidden><span>تثبيت التطبيق<small>أضفه إلى الشاشة الرئيسية</small></span><button class="pill primary" id="installBtn">تثبيت</button></div>
   </div>
   <div class="foot">
-    اضغط على جانبَي الصفحة لتقليبها، وعلى وسطها لإظهار الأزرار أو إخفائها.
+    اسحب الصفحة أو اضغط على جانبَيها لتقليبها، واضغط على وسطها لإظهار الأزرار أو إخفائها.
     <br><kbd>←</kbd> <kbd>→</kbd> تقليب · <kbd>F</kbd> ملء الشاشة · <kbd>B</kbd> علامة · <kbd>I</kbd> الفهرس · <kbd>N</kbd> وضع القراءة · <kbd>Z</kbd> ملء الشاشة بالصفحة
     <br>صور الصفحات: مصحف التجويد برواية ورش، <span dir="ltr">easyquran-eg.com</span>
   </div>
@@ -263,7 +271,7 @@ var store={get:function(k,d){try{var v=localStorage.getItem('warsh12.'+k);return
 function $(id){ return document.getElementById(id); }
 
 var page = 1, bookmarks = store.get('bookmarks', []), drawerOpen = false;
-var spread=$('spread'), slider=$('slider'), pageBox=$('pageBox');
+var stage=$('stage'), cur=null, slider=$('slider'), pageBox=$('pageBox');
 function twoUp(){ return matchMedia('(min-width: 900px) and (min-aspect-ratio: 5/4)').matches; }
 function pagesFor(p){ if(!twoUp()) return [p]; var a = p%2 ? p : p-1; return a+1<=N ? [a,a+1] : [a]; }
 
@@ -277,21 +285,47 @@ function makePage(p){
   d.append(img,n); return d;
 }
 function warm(p){ if(p>=1&&p<=N){ var i=new Image(); i.decoding='async'; i.src=PAGES[p-1]; if(i.decode) i.decode().catch(function(){}); } }
-function go(p, instant){
+function buildSpread(ps){
+  var el=document.createElement('div'); el.className='spread'+(ps.length>1?' two':''); el.dataset.ps=ps.join();
+  ps.forEach(function(q){ el.appendChild(makePage(q)); }); return el;
+}
+function setX(el, x, ms){
+  el.style.transition = ms ? 'transform '+ms+'ms cubic-bezier(.2,.75,.3,1), opacity '+ms+'ms ease' : 'none';
+  el.style.transform = x ? 'translateX('+x+'px)' : '';
+}
+function retire(el, ms){ el.classList.add('gone'); setTimeout(function(){ el.remove(); }, ms+40); }
+/* pages ahead in reading order (dir 1) or behind (dir -1); 0 at either end of the mushaf */
+function target(dir){ var ps=pagesFor(page), t = dir>0 ? ps[ps.length-1]+1 : ps[0]-1; return t>=1 && t<=N ? t : 0; }
+// opts: {instant} for start-up and resizes, {drag} when a swipe already brought the next spread on screen
+function go(p, opts){
+  opts = opts===true ? {instant:true} : (opts||{});
   p = Math.max(1, Math.min(N, parseInt(p,10)||1));
   var prev = page; page = p; store.set('page', page);
-  var ps = pagesFor(p);
-  var cur = Array.prototype.map.call(spread.children, function(c){ return +c.dataset.p; });
-  if(cur.join()!==ps.join()){
-    var swap=function(){ spread.innerHTML=''; spread.classList.toggle('two', ps.length>1);
-      ps.forEach(function(q){ spread.appendChild(makePage(q)); }); spread.classList.remove('out-l','out-r'); };
-    if(instant || !cur.length || matchMedia('(prefers-reduced-motion: reduce)').matches) swap();
-    else { spread.classList.add(p>prev?'out-l':'out-r'); setTimeout(swap,140); }
+  var ps = pagesFor(p), key = ps.join();
+  if(!cur || cur.dataset.ps!==key){
+    var d = opts.drag, old = cur, mode = (opts.instant || !old) ? 'none' : animMode;
+    var next = d && d.el && d.el.dataset.ps===key ? d.el : buildSpread(ps);
+    if(d && d.el && d.el!==next) d.el.remove();
+    if(!next.parentNode) stage.appendChild(next);
+    cur = next;
+    var dir = p>prev ? 1 : -1, W = stage.clientWidth;     // forward moves the pages to the right, as in a right-to-left book
+    if(mode==='slide'){
+      var ms = d ? Math.max(140, Math.min(300, 300*(1-Math.abs(d.dx)/W))) : 300;
+      if(!d){ setX(next, -dir*W, 0); next.getBoundingClientRect(); }
+      setX(next, 0, ms); setX(old, dir*W, ms); retire(old, ms);
+    } else if(mode==='fade'){
+      setX(next, 0, 0); next.style.opacity=0; setX(old, 0, 0); next.getBoundingClientRect();
+      next.style.transition='opacity 220ms ease'; old.style.transition='opacity 220ms ease';
+      next.style.opacity=1; old.style.opacity=0; retire(old, 220);
+    } else { setX(next, 0, 0); next.style.opacity=''; if(old) old.remove(); }
+    // anything still sliding out from an earlier quick turn is dropped
+    Array.prototype.forEach.call(stage.querySelectorAll('.spread'), function(el){ if(el!==cur && el!==old && !el.classList.contains('gone')) el.remove(); });
+    if(old && !opts.instant) buzz();
   }
   warm(ps[ps.length-1]+1); warm(ps[ps.length-1]+2); warm(ps[0]-1);
   updateChrome();
 }
-function step(dir){ var ps=pagesFor(page); go(dir>0 ? ps[ps.length-1]+1 : ps[0]-1); }
+function step(dir){ var t=target(dir); if(t) go(t); }
 function updateChrome(){
   var ps=pagesFor(page);
   var names=[]; ps.forEach(function(q){ var s=surahOn(q); if(names.indexOf(s.ar)<0) names.push(s.ar); });
@@ -341,16 +375,61 @@ var hint=$('hint');
 function dismissHint(){ if(!hint.hidden){ hint.classList.add('fade'); setTimeout(function(){ hint.hidden=true; },300); } }
 
 /* ---------- tapping and swiping the page ---------- */
-var stage=$('stage'), sx=0, sy=0, st=0, moved=false;
-stage.addEventListener('pointerdown', function(e){ sx=e.clientX; sy=e.clientY; st=Date.now(); moved=false; });
-stage.addEventListener('pointermove', function(e){ if(Math.abs(e.clientX-sx)>12||Math.abs(e.clientY-sy)>12) moved=true; });
-stage.addEventListener('pointerup', function(e){
-  var dx=e.clientX-sx, dy=e.clientY-sy;
-  if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)*1.4 && Date.now()-st<700){ step(dx>0?1:-1); return; }   // swipe right = forward, as in a right-to-left book
-  if(moved) return;
-  var x=e.clientX/innerWidth;
-  if(x<0.3) step(1); else if(x>0.7) step(-1); else toggleUI();
+// swipe right = forward, as in a right-to-left book; with the slide animation the pages follow the finger
+var drag=null;
+function zoomed(){ return !!(window.visualViewport && visualViewport.scale>1.01); }
+if(window.visualViewport) visualViewport.addEventListener('resize', function(){ stage.classList.toggle('zoomed', zoomed()); });
+stage.addEventListener('pointerdown', function(e){
+  if(e.button>0 || drag || zoomed()) return;
+  drag={id:e.pointerId, x0:e.clientX, y0:e.clientY, t0:Date.now(), dx:0, axis:null, dir:0, el:null};
 });
+stage.addEventListener('pointermove', function(e){
+  if(!drag || e.pointerId!==drag.id) return;
+  var dx=e.clientX-drag.x0, dy=e.clientY-drag.y0;
+  if(!drag.axis){
+    if(Math.abs(dx)<10 && Math.abs(dy)<10) return;
+    drag.axis = Math.abs(dx) > Math.abs(dy)*1.2 ? 'x' : 'y';
+    if(drag.axis==='x'){ try{ stage.setPointerCapture(e.pointerId); }catch(_){} dismissHint(); }
+  }
+  if(drag.axis!=='x') return;
+  drag.dx=dx;
+  if(animMode!=='slide') return;
+  var dir = dx>0 ? 1 : -1, W = stage.clientWidth, t = target(dir);
+  if(dir!==drag.dir){ if(drag.el){ drag.el.remove(); drag.el=null; } drag.dir=dir;
+    if(t){ drag.el=buildSpread(pagesFor(t)); stage.appendChild(drag.el); } }
+  var x = t ? dx : dx*0.25;                      // at either end the page only gives a little
+  setX(cur, x, 0); if(drag.el) setX(drag.el, x - dir*W, 0);
+});
+function endDrag(e, cancelled){
+  if(!drag || e.pointerId!==drag.id) return;
+  var d=drag; drag=null;
+  if(d.axis==='x'){
+    var W=stage.clientWidth, v=d.dx/Math.max(1,Date.now()-d.t0), dir=d.dx>0?1:-1, t=target(dir);
+    var commit = !cancelled && t && (Math.abs(d.dx)>W*0.18 || (Math.abs(d.dx)>30 && Math.abs(v)>0.3));
+    if(commit){ go(t, {drag:d}); return; }
+    setX(cur, 0, 220);
+    if(d.el){ var el=d.el; setX(el, -d.dir*W, 220); retire(el, 220); }
+    return;
+  }
+  if(d.axis || cancelled) return;
+  var x=e.clientX/innerWidth;                    // a tap: sides turn the page, the middle shows the controls
+  if(x<0.3) step(1); else if(x>0.7) step(-1); else toggleUI();
+}
+stage.addEventListener('pointerup', function(e){ endDrag(e,false); });
+stage.addEventListener('pointercancel', function(e){ endDrag(e,true); });
+
+/* ---------- page-turn animation and vibration ---------- */
+var animMode = store.get('anim', matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'slide');
+function setAnim(m){ animMode = ['slide','fade','none'].indexOf(m)>=0 ? m : 'slide'; store.set('anim',animMode);
+  Array.prototype.forEach.call($('animSeg').children, function(b){ b.setAttribute('aria-pressed', String(b.dataset.anim===animMode)); }); }
+Array.prototype.forEach.call($('animSeg').children, function(b){ b.onclick=function(){ setAnim(b.dataset.anim); }; });
+var buzzOn = store.get('buzz', false), canBuzz = typeof navigator.vibrate==='function';
+function buzzUi(){ var b=$('buzzBtn'); b.textContent = !canBuzz ? 'غير مدعوم' : buzzOn ? 'مفعّل' : 'متوقف';
+  b.setAttribute('aria-pressed', String(buzzOn && canBuzz)); b.disabled=!canBuzz;
+  if(!canBuzz) $('buzzNote').textContent='هذا الجهاز أو المتصفح لا يدعم الاهتزاز'; }
+function buzz(){ if(buzzOn && canBuzz){ try{ navigator.vibrate(12); }catch(_){} } }
+$('buzzBtn').onclick=function(){ buzzOn=!buzzOn; store.set('buzz',buzzOn); buzzUi(); if(buzzOn) buzz(); };
+setAnim(animMode); buzzUi();
 
 /* ---------- bookmarks ---------- */
 var toastTimer;
@@ -527,7 +606,7 @@ document.addEventListener('keydown', function(e){
   else if(k==='b'){ toggleBookmark(); showUI(); }
   else if(k==='i'||k==='/'){ e.preventDefault(); openIndex(); }
 });
-var rz; addEventListener('resize', function(){ clearTimeout(rz); rz=setTimeout(function(){ spread.innerHTML=''; go(page,true); },120); });
+var rz; addEventListener('resize', function(){ clearTimeout(rz); rz=setTimeout(function(){ if(cur) cur.remove(); cur=null; go(page,true); },120); });
 
 /* ---------- start ---------- */
 (function(){
@@ -537,7 +616,7 @@ var rz; addEventListener('resize', function(){ clearTimeout(rz); rz=setTimeout(f
   go(qp>=1 ? qp : store.get('page',1), true);
   if(q.get('open')==='bookmarks'){ openIndex(); setTimeout(function(){ $('bmList').scrollIntoView(); },300); }
   hint.innerHTML = (fsSupported ? '<b>اضغط في أي مكان للقراءة بملء الشاشة</b>' : '<b>بسم الله</b>') +
-    'اضغط على الجانبين لتقليب الصفحات، وعلى الوسط لإظهار الأزرار.';
+    'اسحب أو اضغط على الجانبين لتقليب الصفحات، وعلى الوسط لإظهار الأزرار.';
   hint.hidden=false; setTimeout(dismissHint, 6000);
   showUI(3500);
 })();
