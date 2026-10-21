@@ -123,7 +123,9 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--green);direction:rtl;hei
   padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px);-webkit-user-select:text;user-select:text}
 .drawer.show{transform:none}
 .dtop{display:flex;align-items:center;gap:8px;padding:10px 16px 10px 12px;border-bottom:1px solid var(--line)}
-.dtop h2{margin:0;flex:1;font-size:16px;font-weight:600}
+.tabs{flex:1;display:flex;gap:4px;padding:3px;border-radius:12px;background:var(--ground)}
+.tabs button{flex:1;border:0;background:transparent;border-radius:9px;padding:8px 6px;font-size:15px;font-weight:600;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .dbody{flex:1;overflow-y:auto;overscroll-behavior:contain;padding-bottom:16px}
 .sec{padding:14px 16px 4px;font-size:13px;color:var(--muted);font-weight:600}
 .goto{display:flex;gap:8px;padding:6px 16px 4px}
@@ -141,7 +143,7 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--green);direction:rtl;hei
 .item .ar{font-family:var(--f-ar);font-size:20px;direction:rtl}
 .item .x{width:34px;height:34px}
 .empty{padding:6px 16px;color:var(--muted);font-size:13px}
-.foot{padding:10px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.6}
+.help{padding:4px 16px 8px;font-size:12px;color:var(--muted);line-height:1.7}
 kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--ground)}
 
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);
@@ -208,14 +210,18 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
 <div class="hint" id="hint" hidden></div>
 
 <div class="scrim" id="scrim" hidden></div>
-<aside class="drawer" id="drawer" aria-label="الفهرس" aria-hidden="true">
+<aside class="drawer" id="drawer" aria-label="القائمة" aria-hidden="true">
   <div class="dtop">
-    <h2>الفهرس</h2>
-    <button class="iconbtn" id="closeBtn" aria-label="إغلاق الفهرس">
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tabIdx" data-tab="idx" aria-controls="paneIdx">الفهرس</button>
+      <button role="tab" id="tabSet" data-tab="set" aria-controls="paneSet">الإعدادات</button>
+    </div>
+    <button class="iconbtn" id="closeBtn" aria-label="إغلاق القائمة">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
   </div>
   <div class="dbody" id="dbody">
+   <div id="paneIdx" role="tabpanel" aria-labelledby="tabIdx">
     <div class="sec">انتقل إلى</div>
     <form class="goto" id="gotoForm" autocomplete="off">
       <input id="gotoInput" dir="auto" placeholder="صفحة 1–49، أو آية مثل 2:255" aria-label="صفحة أو آية">
@@ -230,6 +236,8 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
     <div id="trackList"></div>
     <div class="sec">العلامات</div>
     <div id="bmList"></div>
+   </div>
+   <div id="paneSet" role="tabpanel" aria-labelledby="tabSet" hidden>
     <div class="sec">العرض</div>
     <div class="seg" id="toneSeg" role="group" aria-label="وضع القراءة">
       <button data-tone="day">نهاري</button><button data-tone="warm">دافئ</button><button data-tone="night">ليلي</button>
@@ -254,11 +262,13 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
     <div class="meter" id="offMeter" hidden><i id="offBar"></i></div>
     <div class="row2"><span>الإصدار<small id="verDate"></small></span><b id="verNo" dir="ltr"></b></div>
     <div class="row2" id="installRow" hidden><span>تثبيت التطبيق<small>أضفه إلى الشاشة الرئيسية</small></span><button class="pill primary" id="installBtn">تثبيت</button></div>
-  </div>
-  <div class="foot">
+    <div class="sec">مساعدة</div>
+    <div class="help">
     اسحب الصفحة أو اضغط على جانبَيها لتقليبها، واضغط على وسطها لإظهار الأزرار أو إخفائها.
-    <br><kbd>←</kbd> <kbd>→</kbd> تقليب · <kbd>F</kbd> ملء الشاشة · <kbd>B</kbd> علامة · <kbd>T</kbd> الورد/التعلّم · <kbd>I</kbd> الفهرس · <kbd>N</kbd> وضع القراءة · <kbd>Z</kbd> ملء الشاشة بالصفحة
+    <br><kbd>←</kbd> <kbd>→</kbd> تقليب · <kbd>F</kbd> ملء الشاشة · <kbd>B</kbd> علامة · <kbd>T</kbd> الورد/التعلّم · <kbd>I</kbd> الفهرس · <kbd>S</kbd> الإعدادات · <kbd>N</kbd> وضع القراءة · <kbd>Z</kbd> ملء الشاشة بالصفحة
     <br>صور الصفحات: مصحف التجويد برواية ورش، <span dir="ltr">easyquran-eg.com</span>
+    </div>
+   </div>
   </div>
 </aside>
 <div class="toast" id="toast"></div>
@@ -299,7 +309,7 @@ function makePage(p){
   var img=document.createElement('img'); img.alt='الصفحة '+p; img.decoding='async'; img.src=PAGES[p-1];
   var n=document.createElement('div'); n.className=p<=2?'pno low':'pno'; n.setAttribute('aria-hidden','true'); n.textContent=p;
   img.onerror=function(){ img.style.visibility='hidden'; n.hidden=true; if(d.querySelector('.miss')) return; var m=document.createElement('div'); m.className='miss';
-    m.textContent='هذه الصفحة غير محفوظة على الجهاز. اتصل بالإنترنت، أو فعّل «القراءة دون اتصال» من الفهرس.'; d.appendChild(m); };
+    m.textContent='هذه الصفحة غير محفوظة على الجهاز. اتصل بالإنترنت، أو فعّل «القراءة دون اتصال» من الإعدادات.'; d.appendChild(m); };
   d.append(img,n); return d;
 }
 function warm(p){ if(p>=1&&p<=N){ var i=new Image(); i.decoding='async'; i.src=PAGES[p-1]; if(i.decode) i.decode().catch(function(){}); } }
@@ -319,6 +329,7 @@ function go(p, opts){
   opts = opts===true ? {instant:true} : (opts||{});
   p = Math.max(1, Math.min(N, parseInt(p,10)||1));
   var prev = page; page = p; pos[track] = page; store.set('pos', pos);
+  if(history.state && history.state.app && !history.state.panel) history.replaceState({app:1, p:page, t:track}, '');
   var ps = pagesFor(p), key = ps.join();
   if(!cur || cur.dataset.ps!==key){
     var d = opts.drag, old = cur, mode = (opts.instant || !old) ? 'none' : animMode;
@@ -488,7 +499,7 @@ function trackUi(){
 function setTrack(t){
   if(t===track) return;
   pos[track]=page; track=t; store.set('track',track); store.set('pos',pos); trackUi();
-  go(pos[track]||1); toast(TRACKS[track]+' · الصفحة '+page);
+  markJump(pos[track]||1); go(pos[track]||1); toast(TRACKS[track]+' · الصفحة '+page);
 }
 function toggleTrack(){ setTrack(track==='daily' ? 'learn' : 'daily'); }
 $('trackBtn').onclick=toggleTrack;
@@ -505,10 +516,10 @@ function item(no, title, sub, ar, cur, onclick){
 function renderIndex(){
   var ps=pagesFor(page);
   var sl=$('surahList'); sl.innerHTML='';
-  SURAHS.forEach(function(s){ sl.appendChild(item(s.n, 'سورة '+s.ar, ayat(s.verses)+' · الصفحة '+s.page, '', ps.indexOf(s.page)>=0 || (s.n===2&&page>2), function(){ go(s.page); closeIndex(); })); });
+  SURAHS.forEach(function(s){ sl.appendChild(item(s.n, 'سورة '+s.ar, ayat(s.verses)+' · الصفحة '+s.page, '', ps.indexOf(s.page)>=0 || (s.n===2&&page>2), function(){ jump(s.page); closeIndex(); })); });
   var hl=$('hizbList'); hl.innerHTML=''; var curH=hizbOf(ps[0])[0];
   HIZB.forEach(function(h){ var v=firstVerse(h[1]);
-    hl.appendChild(item(h[0], 'الحزب '+h[0], 'الجزء '+h[2]+' · يبدأ في الصفحة '+h[1], '', h[0]===curH, function(){ go(h[1]); closeIndex(); })); });
+    hl.appendChild(item(h[0], 'الحزب '+h[0], 'الجزء '+h[2]+' · يبدأ في الصفحة '+h[1], '', h[0]===curH, function(){ jump(h[1]); closeIndex(); })); });
   var tl=$('trackList'); tl.innerHTML='';
   ['daily','learn'].forEach(function(t){ var p = t===track ? page : (pos[t]||1), s=surahOn(p);
     var row=item('', TRACKS[t], 'الصفحة '+p+' من '+N+' · سورة '+s.ar+(t===track?' · الحالي':''), '', t===track, function(){ setTrack(t); closeIndex(); });
@@ -518,7 +529,7 @@ function renderIndex(){
   if(!bookmarks.length){ var e=document.createElement('div'); e.className='empty'; e.textContent='لا توجد علامات بعد. استخدم زر العلامة في الأعلى، أو اضغط B.'; bl.appendChild(e); }
   bookmarks.forEach(function(p){
     var v=firstVerse(p), w=lastVerse(p), s=surahOn(p);
-    var row=item('', 'الصفحة '+p, 'سورة '+s.ar+' · الآيات '+v[1]+(w[1]!==v[1]||w[0]!==v[0]?'–'+w[1]:''), '', ps.indexOf(p)>=0, function(){ go(p); closeIndex(); });
+    var row=item('', 'الصفحة '+p, 'سورة '+s.ar+' · الآيات '+v[1]+(w[1]!==v[1]||w[0]!==v[0]?'–'+w[1]:''), '', ps.indexOf(p)>=0, function(){ jump(p); closeIndex(); });
     row.querySelector('.no span').textContent='★';
     var x=document.createElement('button'); x.className='iconbtn x'; x.setAttribute('aria-label','إزالة علامة الصفحة '+p);
     x.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>';
@@ -527,28 +538,58 @@ function renderIndex(){
     row.style.flex='1'; wrap.append(row,x); bl.appendChild(wrap);
   });
 }
-function openIndex(){ drawerOpen=true; renderIndex(); $('scrim').hidden=false; $('drawer').setAttribute('aria-hidden','false');
-  requestAnimationFrame(function(){ if(drawerOpen) $('drawer').classList.add('show'); }); showUI(); }
-function closeIndex(){ drawerOpen=false; $('drawer').classList.remove('show'); $('drawer').setAttribute('aria-hidden','true'); $('scrim').hidden=true;
+function showTab(t){
+  t = t==='set' ? 'set' : 'idx';
+  $('paneIdx').hidden = t!=='idx'; $('paneSet').hidden = t!=='set';
+  $('tabIdx').setAttribute('aria-selected', String(t==='idx')); $('tabSet').setAttribute('aria-selected', String(t==='set'));
+  $('dbody').scrollTop=0;
+}
+$('tabIdx').onclick=function(){ showTab('idx'); }; $('tabSet').onclick=function(){ showTab('set'); };
+// fromPop: called by the back/forward buttons, so the history entry is already handled
+function openIndex(tab, fromPop){ showTab(tab); if(drawerOpen) return;
+  drawerOpen=true; renderIndex(); $('scrim').hidden=false; $('drawer').setAttribute('aria-hidden','false');
+  requestAnimationFrame(function(){ if(drawerOpen) $('drawer').classList.add('show'); }); showUI();
+  if(!fromPop) history.pushState({app:1, p:page, t:track, panel:1}, ''); }
+function closeIndex(fromPop){
+  if(!drawerOpen) return;
+  if(!fromPop && history.state && history.state.panel){ history.back(); return; }   // popstate closes it
+  drawerOpen=false; $('drawer').classList.remove('show'); $('drawer').setAttribute('aria-hidden','true'); $('scrim').hidden=true;
   $('gotoMsg').classList.remove('bad'); $('gotoMsg').textContent='ترقيم الآيات حسب العدّ المدني الأخير (رواية ورش).'; showUI(1500); }
-$('menuBtn').onclick=openIndex; $('closeBtn').onclick=closeIndex; $('scrim').onclick=closeIndex;
+$('menuBtn').onclick=function(){ openIndex('idx'); }; $('closeBtn').onclick=function(){ closeIndex(); }; $('scrim').onclick=function(){ closeIndex(); };
+
+/* ---------- back button: closes the panel, then steps back through jumps ----------
+   Every history entry holds a page and a reading position. Turning pages updates the current entry;
+   a jump (index, verse, slider, page box, position switch) adds one, so back returns to where you were. */
+function markJump(p){
+  var st={app:1, p:p, t:track};
+  if(history.state && history.state.panel) history.replaceState(st, '');   // the panel's entry becomes the jump
+  else history.pushState(st, '');
+}
+function jump(p){ p=Math.max(1, Math.min(N, parseInt(p,10)||1)); if(p!==page) markJump(p); go(p); }
+addEventListener('popstate', function(e){
+  var st=e.state; if(!st || !st.app) return;
+  if(st.panel){ if(!drawerOpen) openIndex('idx', true); return; }
+  if(drawerOpen) closeIndex(true);
+  if(st.t && st.t!==track){ pos[track]=page; track=st.t; store.set('track',track); store.set('pos',pos); trackUi(); }
+  if(st.p && st.p!==page) go(st.p);
+});
 $('gotoForm').onsubmit=function(e){
   e.preventDefault(); var q=$('gotoInput').value.trim().replace(/\s+/g,''), msg=$('gotoMsg');
   var m=q.match(/^(\d+)[:.,/-](\d+)$/);
   if(m){ var s=+m[1], a=+m[2];
     if(s<1||s>2){ msg.textContent='تحتوي هذه النسخة على سورتي الفاتحة والبقرة فقط.'; msg.classList.add('bad'); return; }
     if(a<1||a>COUNTS[s-1]){ msg.textContent='عدد آيات سورة '+SURAHS[s-1].ar+' '+COUNTS[s-1]+'.'; msg.classList.add('bad'); return; }
-    var p=pageOfVerse(s,a); go(p); $('gotoInput').value=''; closeIndex(); toast('سورة '+SURAHS[s-1].ar+'، الآية '+a+': الصفحة '+p); return; }
-  if(/^\d+$/.test(q) && +q>=1 && +q<=N){ go(+q); $('gotoInput').value=''; closeIndex(); return; }
+    var p=pageOfVerse(s,a); jump(p); $('gotoInput').value=''; closeIndex(); toast('سورة '+SURAHS[s-1].ar+'، الآية '+a+': الصفحة '+p); return; }
+  if(/^\d+$/.test(q) && +q>=1 && +q<=N){ jump(+q); $('gotoInput').value=''; closeIndex(); return; }
   msg.textContent='اكتب رقم صفحة من 1 إلى 49، أو آية مثل 2:255.'; msg.classList.add('bad');
 };
 
 /* ---------- other controls ---------- */
 $('nextBtn').onclick=function(){ step(1); }; $('prevBtn').onclick=function(){ step(-1); };
 slider.oninput=function(){ pageBox.value=slider.value; };
-slider.onchange=function(){ go(slider.value); };
+slider.onchange=function(){ jump(slider.value); };
 pageBox.onfocus=function(){ pageBox.select(); showUI(8000); };
-pageBox.onkeydown=function(e){ if(e.key==='Enter'){ go(pageBox.value); pageBox.blur(); } };
+pageBox.onkeydown=function(e){ if(e.key==='Enter'){ jump(pageBox.value); pageBox.blur(); } };
 pageBox.onblur=function(){ updateChrome(); showUI(); };
 /* ---------- reading tone: day / warm / night ---------- */
 var TONES=['day','warm','night'], TONE_LABEL={day:'نهاري',warm:'دافئ',night:'ليلي'};
@@ -657,13 +698,14 @@ document.addEventListener('keydown', function(e){
   var k=e.key.toLowerCase();
   if(k==='arrowleft'||k==='pagedown'||k===' '){ e.preventDefault(); step(1); }
   else if(k==='arrowright'||k==='pageup'){ e.preventDefault(); step(-1); }
-  else if(k==='home'){ go(1); } else if(k==='end'){ go(N); }
+  else if(k==='home'){ jump(1); } else if(k==='end'){ jump(N); }
   else if(k==='f'){ toggleFs(); }
   else if(k==='n'){ cycleTone(); showUI(); }
   else if(k==='z'){ setFit(root.dataset.fit==='fill'?'fit':'fill'); toast(root.dataset.fit==='fill'?'ملء الشاشة':'ملاءمة الصفحة'); }
   else if(k==='b'){ toggleBookmark(); showUI(); }
   else if(k==='t'){ toggleTrack(); showUI(); }
-  else if(k==='i'||k==='/'){ e.preventDefault(); openIndex(); }
+  else if(k==='i'||k==='/'){ e.preventDefault(); openIndex('idx'); }
+  else if(k==='s'){ e.preventDefault(); openIndex('set'); }
 });
 var rz; addEventListener('resize', function(){ clearTimeout(rz); rz=setTimeout(function(){ if(cur) cur.remove(); cur=null; go(page,true); },120); });
 
@@ -673,7 +715,8 @@ var rz; addEventListener('resize', function(){ clearTimeout(rz); rz=setTimeout(f
   setTone(t,true); setFit(store.get('fit','fit')); setDim(store.get('dim',100)); oriApply();
   var q=new URLSearchParams(location.search), qp=parseInt(q.get('page'),10);
   go(qp>=1 ? qp : (pos[track]||1), true);
-  if(q.get('open')==='bookmarks'){ openIndex(); setTimeout(function(){ $('bmList').scrollIntoView(); },300); }
+  history.replaceState({app:1, p:page, t:track}, '');
+  if(q.get('open')==='bookmarks'){ openIndex('idx'); setTimeout(function(){ $('bmList').scrollIntoView(); },300); }
   hint.innerHTML = (fsSupported ? '<b>اضغط في أي مكان للقراءة بملء الشاشة</b>' : '<b>بسم الله</b>') +
     'اسحب أو اضغط على الجانبين لتقليب الصفحات، وعلى الوسط لإظهار الأزرار.';
   hint.hidden=false; setTimeout(dismissHint, 6000);
