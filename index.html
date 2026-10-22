@@ -87,6 +87,11 @@ button{cursor:pointer}
 :root[data-tone="night"] .pg{background:#1e1c09}
 :root[data-tone="night"] .pg img,:root[data-tone="night"] .pno{filter:invert(.92) hue-rotate(180deg) saturate(.85) brightness(calc(var(--dim,1) * .88)) contrast(.95)}
 :root[data-tone="night"] .stage{background:#050706}
+/* black: full inversion pushed with contrast so the paper is exactly #000 (pixels off on OLED) and the text white */
+:root[data-tone="black"] .pg{background:#000;box-shadow:none}
+:root[data-tone="black"] .pg img,:root[data-tone="black"] .pno{filter:invert(1) hue-rotate(180deg) contrast(1.3) brightness(var(--dim,1))}
+:root[data-tone="black"] .stage{background:#000}
+:root[data-tone="black"]{--ground:#000;--surface:#0b0b0b;--bar:rgba(0,0,0,.92);--line:#262626;--green-soft:#10251c;--accent-soft:#2a2210}
 
 /* floating bars */
 .bar{position:fixed;left:0;right:0;z-index:10;background:var(--bar);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
@@ -245,7 +250,7 @@ kbd{font:11px var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;b
    <div id="paneSet" role="tabpanel" aria-labelledby="tabSet" hidden>
     <div class="sec">العرض</div>
     <div class="seg" id="toneSeg" role="group" aria-label="وضع القراءة">
-      <button data-tone="day">نهاري</button><button data-tone="warm">دافئ</button><button data-tone="night">ليلي</button>
+      <button data-tone="day">نهاري</button><button data-tone="warm">دافئ</button><button data-tone="night">ليلي</button><button data-tone="black">أسود</button>
     </div>
     <div class="seg" id="fitSeg" role="group" aria-label="حجم الصفحة">
       <button data-fit="fit">ملاءمة الصفحة</button><button data-fit="fill">ملء الشاشة</button>
@@ -601,18 +606,19 @@ pageBox.onfocus=function(){ pageBox.select(); showUI(8000); };
 pageBox.onkeydown=function(e){ if(e.key==='Enter'){ jump(pageBox.value); pageBox.blur(); } };
 pageBox.onblur=function(){ updateChrome(); showUI(); };
 /* ---------- reading tone: day / warm / night ---------- */
-var TONES=['day','warm','night'], TONE_LABEL={day:'نهاري',warm:'دافئ',night:'ليلي'};
+var TONES=['day','warm','night','black'], TONE_LABEL={day:'نهاري',warm:'دافئ',night:'ليلي',black:'أسود'};
 var TONE_ICO={
   day:'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>',
   warm:'<path d="M12 3c3 4 5 6.5 5 10a5 5 0 0 1-10 0c0-3.5 2-6 5-10z"/>',
-  night:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'};
+  night:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+  black:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="currentColor"/>'};
 function setTone(t, quiet){
   if(TONES.indexOf(t)<0) t='day';
-  root.dataset.tone=t; root.dataset.theme = t==='night' ? 'dark' : 'light'; store.set('tone',t);
+  root.dataset.tone=t; root.dataset.theme = (t==='night'||t==='black') ? 'dark' : 'light'; store.set('tone',t);
   $('toneIco').innerHTML=TONE_ICO[t];
   $('themeBtn').setAttribute('aria-label','وضع القراءة: '+TONE_LABEL[t]);
   Array.prototype.forEach.call($('toneSeg').children, function(b){ b.setAttribute('aria-pressed', String(b.dataset.tone===t)); });
-  var mc=document.querySelector('meta[name=theme-color]'); if(mc) mc.content = t==='night' ? '#0c1110' : '#1f5c48';
+  var mc=document.querySelector('meta[name=theme-color]'); if(mc) mc.content = t==='black' ? '#000000' : t==='night' ? '#0c1110' : '#1f5c48';
   if(!quiet) toast('الوضع ال'+TONE_LABEL[t]);
 }
 function cycleTone(){ setTone(TONES[(TONES.indexOf(root.dataset.tone)+1)%TONES.length]); }
